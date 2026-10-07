@@ -15,7 +15,9 @@ AG.previousSet = nil
 AG.previousProfile = nil
 AG.accountVariableVersion = 2
 AG.characterVariableVersion = 1
-AG.isDebug = false
+AG.isDebug = true
+
+local agLFCPFilter
 
 -- Mutex for Bag Updates
 AG.BagsLockCount = 0
@@ -191,7 +193,9 @@ local TWINSLOTS = {
 --- Writes trace messages to the console
 -- fmt with %d, %s,
 local function trace(fmt, ...)
-    if AG.isDebug then
+    if (AG.isDebug and agLFCPFilter) then
+        agLFCPFilter:AddMessage()
+    elseif AG.isDebug then
         d(string.format(fmt, ...))
     end
 end
@@ -4306,6 +4310,10 @@ end
 
 
 function AG:Initialize()
+    -- Debug chat panel
+    if (LibFilteredChatPanel) then
+        agLFCPFilter = LibFilteredChatPanel:CreateFilter(AG.name, "AlphaGear/asset/ag.dds", {0.7, 0.7, 0.3}, false)
+    end
 
     SM:RegisterTopLevel(AG_Panel,false)
 
