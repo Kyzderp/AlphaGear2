@@ -21,6 +21,9 @@ lang/$(language).lua
 
 AGSkills17.lua
 
+AlphaGearReworkedData.lua
+Database.lua
+
 AlphaGear.lua
 
 plugins/FCOIS/ag_fcois.lua

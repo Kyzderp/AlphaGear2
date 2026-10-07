@@ -1,3 +1,5 @@
+if (AlphaGearUseReworkedData) then return end
+
 AG = {}
 
 AG.name = 'AlphaGear'
