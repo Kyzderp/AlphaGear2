@@ -19,8 +19,18 @@ local function IsGearEmpty(tab)
 end
 
 local function MigrateData()
-    if (not AGX2_Character.Default or not AGX2_Character.Default[GetUnitDisplayName("player")]) then return end
+    if (not AGX2_Character) then
+        AGX2_Character = {}
+    end
+    if (not AGX2_Character.Default) then
+        AGX2_Character.Default = {}
+    end
+    if (not AGX2_Character.Default[GetUnitDisplayName("player")]) then
+        AGX2_Character.Default[GetUnitDisplayName("player")] = {}
+    end
+
     local accTable = AGX2_Character.Default[GetUnitDisplayName("player")]
+    -- TODO: init if empty
 
     -- In-place migration for each known character: this is because we don't know the char IDs or names of the other megaserver
     for charIndex = 1, GetNumCharacters() do
@@ -84,6 +94,8 @@ local function MigrateData()
                     skillbars = {},
                     gear = {},
                     builds = {},
+                    lastUsedBuild = profileData.lastset,
+                    numBuildButtons = profileData.setamount,
                 }
                 local newProfile = newData.profiles[profileId]
 
@@ -129,16 +141,31 @@ local function GetCurrentCharacterTable()
     end
     return localCharTable
 end
+AGD.GetCharacter = GetCurrentCharacterTable
 
 --[[
 [3] = {
     skillbars = {},
     gear = {},
     builds = {},
+    numBuildButtons = 16,
+    lastUsedBuild = false,
 }
 ]]
-local function GetCurrentProfileTable()
+local function GetProfileTable(profileId)
     local charTable = GetCurrentCharacterTable()
-    return charTable.profiles[charTable]
+    return charTable.profiles[profileId or charTable.currentProfileId]
 end
-AGD.GetCurrentProfileTable = GetCurrentProfileTable
+AGD.GetProfile = GetProfileTable
+
+local function CreateProfile(profileId)
+    local charTable = GetCurrentCharacterTable()
+    charTable.profiles[profileId] = {
+        skillbars = {},
+        gear = {},
+        builds = {},
+        lastUsedBuild = profileData.lastset,
+        numBuildButtons = profileData.setamount,
+    }
+end
+AGD.CreateProfile = CreateProfile

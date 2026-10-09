@@ -1,3 +1,4 @@
+local AGD = AlphaGearDatabase
 
 -- Constants for options
 
@@ -208,11 +209,13 @@ end
 
 --
 function AG.getNumberOfVisibleSetButtons()
+	if (AGD) then return AGD.GetCurrentProfileTable().numBuildButtons end
 	return AG.setdata.setamount
 end
 
 function AG.setNumberOfVisibleSetButtons(value)
 	AG.setdata.setamount = value 
+	if (AGD) then AGD.GetCurrentProfileTable().numBuildButtons = value end
 	AG.DrawSetButtonsUI()
 end
 --
