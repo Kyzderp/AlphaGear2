@@ -121,7 +121,7 @@ local MENU = { nr = nil, type = nil, copySourceSetId = nil, copySourceProfileId 
 local EM, WM, SM, ICON, MARK = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER, {}, {}
 local OFMGR = ZO_OUTFIT_MANAGER
 local IMGR = PLAYER_INVENTORY
-local MAX_PROFILES = 20 
+local OLD_MAX_PROFILES = 20 -- Prior to 8.0.0 rework, still used to limit keybinds
 
 local AVAIL_EQUIPMENT_CACHE = nil
 
@@ -200,6 +200,41 @@ local function trace(fmt, ...)
     end
 end
 
+local function IndexOf(tab, item)
+    for i, v in ipairs(tab) do
+        if (v == item) then
+            return i
+        end
+    end
+    return nil
+end
+
+--- sorts the profiles according to their sortKey
+-- a profile w/o sortKey will be sorted to the end of the list
+local function ProfileSortHelper(item1, item2)
+    local sortKey1 = item1.sortKey
+    if not sortKey1 or sortKey1 == "" then
+        sortKey1 = 'zzzzzzzzzzzzzzzzzzzzzzzz'..item1.name
+    end
+
+    local sortKey2 = item2.sortKey
+    if not sortKey2 or sortKey2 == "" then
+        sortKey2 = 'zzzzzzzzzzzzzzzzzzzzzzzz'..item2.name
+    end
+
+    return (sortKey1 < sortKey2)
+end
+
+local function GetSortedProfileIds()
+    local profiles = AGD.GetCharacter().profiles
+    local ids = {}
+    for id, _ in pairs(profiles) do
+        table.insert(ids, id)
+    end
+
+    table.sort(ids, function(a, b) return ProfileSortHelper(profiles[a], profiles[b]) end)
+    return ids
+end
 
 --- Computes a color depending on the condition of an item.
 -- @param val condition value
@@ -748,7 +783,7 @@ function AG.SetupMainPanel()
     ZO_CreateStringId('SI_BINDING_NAME_AG_TOGGLE_PROFILE', L.BindToggleProfile)
 
     
-    for pindex = 1, MAX_PROFILES do
+    for pindex = 1, OLD_MAX_PROFILES do
         -- Create Key Binding Label
         ZO_CreateStringId('SI_BINDING_NAME_AG_PROFILE_'..pindex, L.BindLoadProfile..pindex)
     end
@@ -1523,9 +1558,7 @@ function AG.ComputeItemUsageMap()
 
     local usageMap = {}
     
-    for profileId = 1, MAX_PROFILES do
-        
-        local agModel = AGD.GetProfile(profileId)
+    for profileId, agModel in pairs(AGD.GetCharacter().profiles) do
         if agModel then
             for buildId = 1, MAXSLOT do
                 local build = agModel.builds[buildId]
@@ -1572,29 +1605,8 @@ function AG.SetupProfileCombo()
         AG.LoadProfile(entry.profileId)
     end
 
-    --- sorts the profiles according to their sortKey
-    -- a profile w/o sortKey will be sorted to the end of the list
-    local function ProfileSortHelper(item1, item2)
-        local sortKey1 = item1.sortKey
-        if not sortKey1 or sortKey1 == "" then
-            sortKey1 = 'zzzzzzzzzzzzzzzzzzzzzzzz'..item1.name
-        end
-        
-        local sortKey2 = item2.sortKey
-        if not sortKey2 or sortKey2 == "" then
-            sortKey2 = 'zzzzzzzzzzzzzzzzzzzzzzzz'..item2.name
-        end
-
-        return (sortKey1 < sortKey2)
-    end
-
-    
     -- store the current profile
     local currentProfile = AGD.GetProfile()
-    
-    -- Sort the entries according to profile sort index
-    -- will invalidate currentProfileId
-    table.sort(AGD.GetCharacter().profiles, function(item1, item2) return ProfileSortHelper(item1, item2) end)  
     
     -- reset cached IDs
     AG.previousSet = nil
@@ -1603,8 +1615,7 @@ function AG.SetupProfileCombo()
     local defaultEntry
 
     -- Add available Profiles
-    for profileId = 1, MAX_PROFILES do
-        local profile = AGD.GetProfile(profileId)
+    for profileId, profile in pairs(AGD.GetCharacter().profiles) do
         local entry = ZO_ComboBox:CreateItemEntry(profile.name, OnProfileSelected)
         entry.profileId = profileId
         dropdown:AddItem(entry, ZO_COMBOBOX_SUPRESS_UPDATE)
@@ -2559,16 +2570,13 @@ function AG.SetupInventoryCallback()
 
             -- find all the builds, that use this item
            
-            for profileId = 1, MAX_PROFILES do
-                local agModel = AGD.GetProfile(profileId)
-                if agModel then
-                    for setId = 1, MAXSLOT do
-                        for slotId = 1,16 do
-                            if agModel.gear[setId][slotId].id == uid then
-                                -- item is part of at least one gear-set
-                                ShowAGMarker(c)
-                                return
-                            end
+            for profileId, agModel in pairs(AGD.GetCharacter().profiles) do
+                for setId = 1, MAXSLOT do
+                    for slotId = 1,16 do
+                        if agModel.gear[setId][slotId].id == uid then
+                            -- item is part of at least one gear-set
+                            ShowAGMarker(c)
+                            return
                         end
                     end
                 end
@@ -3814,8 +3822,8 @@ local function ImportProfileCommand(argString)
     -- List the available profiles
     if (not lastNum) then
         d("Available Profiles:")
-        for profileId = 1, MAX_PROFILES do
-            local profileName = otherData.profiles[profileId].name
+        for profileId, profileData in pairs(AGD.GetCharacter(charId).profiles) do -- TODO: fix this
+            local profileName = profileData.name
             d(zo_strformat("<<1>> - <<2>>", profileId, profileName))
         end
         d("To import a profile, type again: /agimport " .. charName .. " number")
@@ -4085,17 +4093,19 @@ function AG.LoadNextProfile()
     local newProfileId = AGD.GetCharacter().currentProfileId
     local oldProfileId = AGD.GetCharacter().currentProfileId
 
+    local profileIds = GetSortedProfileIds()
+    local newProfileIndex = IndexOf(profileIds, newProfileId) or 0
+
     -- cycle through profiles until the next filled
     repeat
-        if newProfileId < MAX_PROFILES then
-            newProfileId = newProfileId + 1
+        if (newProfileIndex < #profileIds) then
+            newProfileIndex = newProfileIndex + 1
         else
-            newProfileId = 1
+            newProfileIndex = 1
         end
-        trace ("loop through profiles: old "..oldProfileId.." new "..newProfileId)
-    until (newProfileId == oldProfileId) or (not IsProfileEmptyOfBuilds(newProfileId))
+    until (profileIds[newProfileIndex] == oldProfileId) or (not IsProfileEmptyOfBuilds(profileIds[newProfileIndex]))
 
-    AG.LoadProfile(newProfileId)
+    AG.LoadProfile(profileIds[newProfileIndex])
 end
 
 --- load the previous profile according to sort-order
@@ -4110,17 +4120,19 @@ function AG.LoadPreviousProfile()
     local newProfileId = AGD.GetCharacter().currentProfileId
     local oldProfileId = AGD.GetCharacter().currentProfileId
 
+    local profileIds = GetSortedProfileIds()
+    local newProfileIndex = IndexOf(profileIds, newProfileId) or 0
+
     -- cycle through profiles until the next filled
     repeat
-        if newProfileId > 1 then
-            newProfileId = newProfileId - 1
+        if (newProfileIndex > 1) then
+            newProfileIndex = newProfileIndex - 1
         else
-            newProfileId = MAX_PROFILES
+            newProfileIndex = #profileIds
         end
-        trace ("loop through profiles: old "..oldProfileId.." new "..newProfileId)
-    until (newProfileId == oldProfileId) or (not IsProfileEmptyOfBuilds(newProfileId))
+    until (profileIds[newProfileIndex] == oldProfileId) or (not IsProfileEmptyOfBuilds(profileIds[newProfileIndex]))
 
-    AG.LoadProfile(newProfileId)
+    AG.LoadProfile(profileIds[newProfileIndex])
 end
 
 --- toggles between the last two used profiles
@@ -4227,13 +4239,12 @@ function AG:Initialize()
     -- Initialize profile structure
     if AGD.GetCharacter().profiles == nil then
         AGD.GetCharacter().currentProfileId = 1
-        AGD.GetCharacter().profiles = {}
-        
-        for i = 1, MAX_PROFILES do
-            AGD.GetCharacter().profiles[i] = {}
-            AGD.GetCharacter().profiles[i].name = 'Profile '..i
-            AGD.GetCharacter().profiles[i].currentBuild = 1
-        end
+        AGD.GetCharacter().profiles = {
+            [1] = {
+                name = "Profile 1",
+                currentBuild = 1
+            }
+        }
     end
 
     

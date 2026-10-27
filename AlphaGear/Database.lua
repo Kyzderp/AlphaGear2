@@ -94,8 +94,9 @@ local function MigrateData()
                     skillbars = {},
                     gear = {},
                     builds = {},
-                    lastUsedBuild = profileData.lastset,
-                    numBuildButtons = profileData.setamount,
+                    lastUsedBuild = profileData.lastset, -- TODO: is this from character data?
+                    numBuildButtons = profileData.setamount, -- TODO: is this from character data?
+                    sortKey = profileData.sortKey,
                 }
                 local newProfile = newData.profiles[profileId]
 
@@ -158,14 +159,26 @@ local function GetProfileTable(profileId)
 end
 AGD.GetProfile = GetProfileTable
 
+local function FindUnusedProfileId()
+    local charTable = GetCurrentCharacterTable()
+    local i = 1
+    while (charTable.profiles[i] ~= nil) do
+        i = i + 1
+    end
+    return i
+end
+
+-- Initializes values in profile. profileId can be nil
 local function CreateProfile(profileId)
+    profileId = profileId or FindUnusedProfileId()
+
     local charTable = GetCurrentCharacterTable()
     charTable.profiles[profileId] = {
         skillbars = {},
         gear = {},
         builds = {},
-        lastUsedBuild = profileData.lastset,
-        numBuildButtons = profileData.setamount,
+        lastUsedBuild = 1, -- TODO
+        numBuildButtons = 16, -- TODO
     }
 end
 AGD.CreateProfile = CreateProfile
