@@ -1647,7 +1647,7 @@ function AG.LoadOutfitOrStyle(buildId)
     if AGplugAS.useAddon() then
         AGplugAS.LoadStyle(AGD.GetProfile().builds[buildId].AlphaStyleId)
     else
-        AG.LoadOutfit (AGD.GetProfile().builds[buildId].outfit)
+        AG.LoadOutfit(AGD.GetProfile().builds[buildId].outfit)
     end
 
 end
@@ -1693,7 +1693,7 @@ function AG.LoadNextSet()
             nextSet = 1
         end
         trace ("loop through builds: old "..oldSet.." new "..nextSet)
-    until (nextSet == oldSet) or (not IsBuildEmpty(profile.builds[nextSet]))
+    until (nextSet == oldSet) or (not AGD.IsBuildEmpty(profile.builds[nextSet]))
 
     AG.LoadSet (nextSet)
 end
@@ -1715,7 +1715,7 @@ function AG.LoadPreviousSet()
             nextSet = MAXSLOT
         end
         trace ("loop through builds: old "..oldSet.." new "..nextSet)
-    until (nextSet == oldSet) or (not IsBuildEmpty(profile.builds[nextSet]))
+    until (nextSet == oldSet) or (not AGD.IsBuildEmpty(profile.builds[nextSet]))
 
     AG.LoadSet (nextSet)
 end
@@ -4009,13 +4009,13 @@ function AG.LoadProfile(profileId)
         return
     end
 
+    if not AGD.GetProfile(profileId) then
+        d("|cFF0000Couldn't load profile that doesn't exist: " .. profileId)
+        return
+    end
+
     -- store current profile Id
     AG.previousProfile = AGD.GetCharacter().currentProfileId
-    
-    -- lazy create new profile
-    if not AGD.GetProfile(profileId) then
-        AGD.CreateProfile(profileId)
-    end
     
     AGD.GetCharacter().currentProfileId = profileId
     
@@ -4058,38 +4058,10 @@ function AG.LoadProfileByBindID(profileBindId)
     AG.LoadProfile(profileBindId)
 end
 
--- TODO: this doesn't account for integrations
-local function IsBuildEmpty(build)
-    if not build then return true end 
-
-    return (build.gear == nil or build.gear == 0) 
-            and (build.skill == nil or (build.skill[1] == 0 and build.skill[2] == 0)) 
-            and (build.outfit == nil or build.outfit == -1)
-end
-
--- Only for the purpose of loading next/prev profile
-local function IsProfileEmptyOfBuilds(profileId)
-
-    local profile = AGD.GetProfile(profileId)
-    if not profile then return true end
-
-    for _, build in pairs(profile.builds) do
-        if not IsBuildEmpty(build) then
-            return false
-        end
-    end
-    return true
-end
-
 --- load the next profile according to sort-order
 function AG.LoadNextProfile()
     trace("AG.LoadNextProfile()")
  
-    -- init profileId after reload
-    if not AGD.GetCharacter().currentProfileId or AGD.GetCharacter().currentProfileId == 0 then
-        AGD.GetCharacter().currentProfileId = 1
-    end
-
     local newProfileId = AGD.GetCharacter().currentProfileId
     local oldProfileId = AGD.GetCharacter().currentProfileId
 
@@ -4103,7 +4075,7 @@ function AG.LoadNextProfile()
         else
             newProfileIndex = 1
         end
-    until (profileIds[newProfileIndex] == oldProfileId) or (not IsProfileEmptyOfBuilds(profileIds[newProfileIndex]))
+    until (profileIds[newProfileIndex] == oldProfileId) or (not IsProfileEmpty(profileIds[newProfileIndex]))
 
     AG.LoadProfile(profileIds[newProfileIndex])
 end
@@ -4111,11 +4083,6 @@ end
 --- load the previous profile according to sort-order
 function AG.LoadPreviousProfile()
     trace("AG.LoadPreviousProfile()")
-
-    -- init profileId after reload
-    if not AGD.GetCharacter().currentProfileId or AGD.GetCharacter().currentProfileId == 0 then
-        AGD.GetCharacter().currentProfileId = 1
-    end
 
     local newProfileId = AGD.GetCharacter().currentProfileId
     local oldProfileId = AGD.GetCharacter().currentProfileId
@@ -4130,7 +4097,7 @@ function AG.LoadPreviousProfile()
         else
             newProfileIndex = #profileIds
         end
-    until (profileIds[newProfileIndex] == oldProfileId) or (not IsProfileEmptyOfBuilds(profileIds[newProfileIndex]))
+    until (profileIds[newProfileIndex] == oldProfileId) or (not IsProfileEmpty(profileIds[newProfileIndex]))
 
     AG.LoadProfile(profileIds[newProfileIndex])
 end
@@ -4153,14 +4120,6 @@ function AG.ToggleDebug(extra)
     end
 end
 
---[[
-function AG.OnGamepadPreferredModeChanged()
-    trace ("GP Mode changed")
-    -- update Layout
-    AG.InitPositions()
-end
-]]--
-
 function AG.OnScreenResized()
     trace ("Screen size changed")
     -- update Layout
@@ -4168,6 +4127,67 @@ function AG.OnScreenResized()
 end
 
 
+---------------------------------------------------------------------
+-- Revamped UI
+---------------------------------------------------------------------
+-- If profile contents' number of sets change, need to adjust the lists
+local function RefreshUI()
+end
+
+function AG.OnAddNewProfileClicked()
+    local profileId = AGD.CreateProfile()
+    AG.LoadProfile(profileId)
+end
+
+local function OnDeleteProfileConfirmed()
+    AGD.DeleteProfile()
+    AG.LoadProfile(GetSortedProfileIds()[1])
+end
+
+function AG.OnDeleteProfileClicked()
+    -- TODO: do not allow deleting last profile
+    -- TODO: confirmation dialog
+    if (AGD.GetNumProfiles() == 1) then
+        d("You cannot delete the last remaining profile; create another profile first.")
+        return
+    end
+    OnDeleteProfileConfirmed()
+end
+
+function AG.OnAddNewBuildClicked()
+    AGD.CreateBuild()
+end
+
+function AG.OnDeleteBuildClicked() -- TODO: index? gonna be in dropdown?
+    -- TODO: confirmation dialog?
+    local removedName = AGD.DeleteBuild()
+    d("Removed build \"" .. tostring(removedName) .. "\"")
+end
+
+function AG.OnAddNewGearClicked()
+    AGD.CreateGear()
+end
+
+function AG.OnDeleteGearClicked() -- TODO: index?
+    -- TODO: confirmation?
+    local removedIndex = AGD.DeleteGear()
+    d(zo_strformat("Removed gear set <<1>>", removedIndex))
+end
+
+function AG.OnNewSkillbarClicked()
+    AGD.CreateSkillbar()
+end
+
+function AG.OnDeleteSkillbarClicked() -- TODO: index?
+    -- TODO: confirmation?
+    local removedIndex = AGD.DeleteSkillbar()
+    d(zo_strformat("Removed skill bar <<1>>", removedIndex))
+end
+
+
+---------------------------------------------------------------------
+-- Init
+---------------------------------------------------------------------
 function AG:Initialize()
     -- Debug chat panel
     if (LibFilteredChatPanel) then
