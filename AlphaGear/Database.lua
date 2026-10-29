@@ -163,13 +163,19 @@ local function MigrateData()
 end
 AGD.MigrateData = MigrateData
 
+-- Returns the entire account's table. Mostly to be called without accountName
 local localAccTable
-local function GetCurrentAccountTable()
+local function GetAccountTable(accountName)
+    if (accountName) then
+        return AGX2_Character.Default[accountName]
+    end
+
     if (not localAccTable) then
         localAccTable = AGX2_Character.Default[GetUnitDisplayName("player")]
     end
     return localAccTable
 end
+AGD.GetAccountTable = GetAccountTable
 
 --[[
 ["123564352698409324"] = {
@@ -181,7 +187,7 @@ end
 local localCharTable
 local function GetCurrentCharacterTable()
     if (not localCharTable) then
-        localCharTable = GetCurrentAccountTable()[GetCurrentCharacterId()]
+        localCharTable = GetAccountTable()[GetCurrentCharacterId()]
     end
     return localCharTable
 end
@@ -208,6 +214,10 @@ local function GetNumProfiles()
 end
 AGD.GetNumProfiles = GetNumProfiles
 
+
+---------------------------------------------------------------------
+-- Creation / deletion
+---------------------------------------------------------------------
 local function FindUnusedProfileId()
     local charTable = GetCurrentCharacterTable()
     local i = 1
@@ -328,3 +338,7 @@ local function DeleteSkillbar(index)
     return index
 end
 AGD.DeleteSkillbar = DeleteSkillbar
+
+
+---------------------------------------------------------------------
+---------------------------------------------------------------------
