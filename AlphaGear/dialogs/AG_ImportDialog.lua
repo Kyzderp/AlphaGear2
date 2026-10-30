@@ -12,18 +12,18 @@ AGImportDlg = {}
 ------------------------------------------------------
 local selectedAccount, selectedCharacter, selectedProfile
 
-local function SetUpProfileDropdown(contentControl, accountName, charName)
+local function SetUpProfileDropdown(contentControl, accountName, charId)
     local comboParent = contentControl:GetNamedChild("ProfileDropdown")
     local combo = ZO_ComboBox_ObjectFromContainer(comboParent)
 
     combo:ClearItems()
-    if (not accountName or not charName) then return end
+    if (not accountName or not charId) then return end
 
     local function OnProfileSelected(_, _, entry)
         selectedProfile = entry.profile
     end
 
-    for profileNum, profileData in pairs(AGX2_Character.Default[accountName][charName].profiles) do
+    for profileNum, profileData in pairs(AGX2_Character.Default[accountName][charId].profiles) do
         local entry = ZO_ComboBox:CreateItemEntry(profileData.name, OnProfileSelected)
         entry.profile = profileNum
         combo:AddItem(entry, ZO_COMBOBOX_SUPRESS_UPDATE)
@@ -39,13 +39,13 @@ local function SetUpCharacterDropdown(contentControl, accountName)
     if (not accountName) then return end
 
     local function OnCharSelected(_, _, entry)
-        selectedCharacter = entry.charName
-        SetUpProfileDropdown(contentControl, accountName, entry.charName)
+        selectedCharacter = entry.charId
+        SetUpProfileDropdown(contentControl, accountName, entry.charId)
     end
 
-    for charName, _ in pairs(AGX2_Character.Default[accountName]) do
-        local entry = ZO_ComboBox:CreateItemEntry(charName, OnCharSelected)
-        entry.charName = charName
+    for charId, charData in pairs(AGX2_Character.Default[accountName]) do
+        local entry = ZO_ComboBox:CreateItemEntry(charData.characterName, OnCharSelected)
+        entry.charId = charId
         combo:AddItem(entry, ZO_COMBOBOX_SUPRESS_UPDATE)
     end
     combo:UpdateItems()

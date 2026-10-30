@@ -270,6 +270,10 @@ end
 
 local function Zero(val) if val == 0 then return nil else return val end end
 
+local function IsNonEmpty(val)
+    return val ~= nil and val ~= 0
+end
+
 --- Hides a control
 -- Used for charge and repair icons
 -- @param c control to hide
@@ -1370,7 +1374,7 @@ function AG.LoadItem(nr, slotIndex, set)
 
     local targetSlot = SLOTS[slotIndex][1]
 
-    if AGD.GetProfile().gear[nr][slotIndex].id ~= 0 then
+    if (IsNonEmpty(AGD.GetProfile().gear[nr][slotIndex].id)) then
         table.insert(AG.Jobs, {AG.JOB_TYPE_EQUIP_GEAR, AGD.GetProfile().gear[nr][slotIndex], targetSlot})
     elseif set and AGD.GetProfile().builds[set].lock == 1 then
         -- this will corrupt the cache, if the unequipped item is used in a later slot. Not a real use-case...
@@ -1461,7 +1465,7 @@ function AG.GetSkill(abilityId)
     local hasProgression, progressionIndex = GetAbilityProgressionXPInfoFromAbilityId(abilityId)
 
     if not hasProgression then
-        trace('Ability with ID %d has no progression.', abilityId)
+        -- trace('Ability with ID %d has no progression.', abilityId)
         return false
     end
 
@@ -1620,7 +1624,7 @@ function AG.ComputeItemUsageMap()
                     for slot = 1, 16 do
                         local item = gearSet[slot]
 
-                        if item.id ~= 0 then
+                        if IsNonEmpty(item.id) then
 
                             local buildIds = usageMap[item.id]
                             if buildIds == nil then
@@ -1817,7 +1821,9 @@ function AG.LoadSetInternal(nr)
     AG.LoadOutfitOrStyle(nr)
 
     -- load gear
-    if AGD.GetProfile().builds[nr].gear ~= 0 then AG.LoadGear(AGD.GetProfile().builds[nr].gear, nr) end
+    if (IsNonEmpty(AGD.GetProfile().builds[nr].gear)) then
+        AG.LoadGear(AGD.GetProfile().builds[nr].gear, nr)
+    end
 
     -- load skills
     -- Updated to avoid waiting until gear is loaded
@@ -2022,7 +2028,7 @@ function AG.MoveGearSet(deposit, nr, update)
 
     for slotIndex = 1, #SLOTS do
         local id = AGD.GetProfile().gear[nr][slotIndex].id
-        if id and id ~= 0 then
+        if IsNonEmpty(id) then
             if deposit then
                 table.insert(AG.Jobs, {AG.JOB_TYPE_DEPOSIT_GEAR, id})
             else
@@ -2363,11 +2369,11 @@ end
 function AG.UpdateItemLinks()
     trace("UpdateItemLinks")
     for setId, set in ipairs(AGD.GetProfile().builds) do
-        if set.gear > 0 then
+        if set.gear and set.gear > 0 then
             local gear = AGD.GetProfile().gear[set.gear]
             -- update itemlinks
             for slot = 1, #SLOTS do
-                if gear[slot].id ~= 0 then
+                if IsNonEmpty(gear[slot].id) then
                     local sourceBagId, sourceBagSlot = AG.GetItemFromBag(gear[slot].id)
 
                     -- found
@@ -2393,6 +2399,7 @@ function AG.UpdateUI(from,to)
     local toGear = to
     if not from then from = 1 end
     if not to then to = #profile.builds end
+    to = math.min(to, #profile.builds)
     local text = 'text'
     for x = from, to do
         if profile.builds[x].text[1] == 0 then text = 'Build '..x else text = profile.builds[x].text[1] end
@@ -2404,6 +2411,7 @@ function AG.UpdateUI(from,to)
     end
 
     if (not toGear) then toGear = #profile.gear end
+    toGear = math.min(toGear, #profile.gear) -- because it could be an update on build 7 but there aren't 7 gear sets
     for x = from, toGear do
         AG.UpdateGearBorder(x)
     end
@@ -2419,8 +2427,9 @@ function AG.UpdateEditPanel(nr)
     for x = 1,2 do
         for slot = 1,6 do
             local linkedSkillbar = set.skill[x]
-            if linkedSkillbar ~= 0 and AGD.GetProfile().skillbars[linkedSkillbar][slot] ~= 0 then
-                val = GetAbilityTexture(AGD.GetProfile().skillbars[linkedSkillbar][slot])
+            local profileSkillbars = AGD.GetProfile().skillbars
+            if IsNonEmpty(linkedSkillbar) and profileSkillbars[linkedSkillbar] and IsNonEmpty(profileSkillbars[linkedSkillbar][slot]) then
+                val = GetAbilityTexture(profileSkillbars[linkedSkillbar][slot])
             else
                 val = nil
             end
@@ -2431,7 +2440,7 @@ function AG.UpdateEditPanel(nr)
     -- Draws the gear buttons
     for slot = 1, #SLOTS do
         c = WM:GetControlByName('AG_Edit_Gear_1_'..slot)
-        if set.gear > 0 and AGD.GetProfile().gear[set.gear][slot].id ~= 0 then
+        if set.gear and set.gear > 0 and IsNonEmpty(AGD.GetProfile().gear[set.gear][slot].id) then
             c:SetNormalTexture(GetItemLinkInfo(AGD.GetProfile().gear[set.gear][slot].link))
             c:GetNamedChild('Bg'):SetCenterColor(Quality(AGD.GetProfile().gear[set.gear][slot].link,0.5))
         else
@@ -2441,13 +2450,13 @@ function AG.UpdateEditPanel(nr)
     end
 
     -- draws skill bar 1
-    if set.gear ~= 0 and AGD.GetProfile().gear[set.gear][1].id ~= 0 then val = Zero(set.icon[1]) or AG.GetSetIcon(set.gear,1)
+    if IsNonEmpty(set.gear) and IsNonEmpty(AGD.GetProfile().gear[set.gear][1].id) then val = Zero(set.icon[1]) or AG.GetSetIcon(set.gear,1)
     else val = Zero(set.icon[1]) or 'x.dds' end
     AG_PanelSetPanelScrollChildEditPanelSetBar1PanelBar1IconTex:SetTexture(val)
 
 
     -- draws skill bar 2
-    if set.gear ~= 0 and AGD.GetProfile().gear[set.gear][3].id ~= 0 then val = Zero(set.icon[2]) or AG.GetSetIcon(set.gear,2)
+    if IsNonEmpty(set.gear) and IsNonEmpty(AGD.GetProfile().gear[set.gear][3].id) then val = Zero(set.icon[2]) or AG.GetSetIcon(set.gear,2)
     else val = Zero(set.icon[2]) or 'x.dds' end
     AG_PanelSetPanelScrollChildEditPanelSetBar2PanelBar2IconTex:SetTexture(val)
 
@@ -3783,9 +3792,12 @@ local function ImportProfile(accountName, charId, profileId)
     for index = 1, #currentProfile.gear do
         AG.handlePostChangeGearSetItems(index)
     end
+
+    DrawSets()
     AG.UpdateUI()
     d("Done")
 end
+AG.ImportProfile = ImportProfile
 
 -- TODO: fix this for char ids
 local function ImportProfileCommand(argString)
@@ -3857,7 +3869,7 @@ function AG.Tooltip(c, visible, edit)
 
         if type == AG.MODE_GEAR then
             if edit then nr = AGD.GetProfile().builds[SELECT].gear end
-            if nr > 0 then
+            if IsNonEmpty(nr) then
                 if AGD.GetProfile().gear[nr][slot].link == 0 then return end
 
                 c.text = ItemTooltip
@@ -3868,7 +3880,7 @@ function AG.Tooltip(c, visible, edit)
             else return end
         elseif type == AG.MODE_SKILL then
             if edit then nr = AGD.GetProfile().builds[SELECT].skill[nr] end
-            if nr > 0 then
+            if IsNonEmpty(nr) then
                 local skillAbilityId = AGD.GetProfile().skillbars[nr][slot]
                 if skillAbilityId == 0 then return end
 
@@ -4007,19 +4019,23 @@ function AG.LoadProfile(profileId)
 
     trace("AG.LoadProfile %d", profileId)
     if profileId == AGD.GetCharacter().currentProfileId then
-        -- nothing to do
+        -- nothing to do (this doesn't catch nil ID)
         return
     end
 
-    if not AGD.GetProfile(profileId) then
+    if (profileId and not AGD.GetProfile(profileId)) then
         d("|cFF0000Couldn't load profile that doesn't exist: " .. profileId)
         return
     end
 
-    -- store current profile Id
-    AG.previousProfile = AGD.GetCharacter().currentProfileId
+    if (not profileId) then
+        -- nil profileId means we're refreshing the page after creating/deleting sets
+    else
+        -- store current profile Id
+        AG.previousProfile = AGD.GetCharacter().currentProfileId
+        AGD.GetCharacter().currentProfileId = profileId
+    end
 
-    AGD.GetCharacter().currentProfileId = profileId
     local profile = AGD.GetProfile()
 
     -- First draw appropriate number of lines for each type
@@ -4043,18 +4059,23 @@ function AG.LoadProfile(profileId)
         end
     end
 
-    d("Loaded profile '" .. profile.name .. "'")
+    if (profileId) then -- don't blab if just refreshing
+        d("Loaded profile '" .. profile.name .. "'")
 
-    AG.HideEditPanel()
+        AG.HideEditPanel()
+    end
 
     AG.UpdateUI()
-    AG.previousSet = nil
 
-    if AG.isLoadLastBuildOfProfile() then
-        AGD.GetProfile().lastUsedBuild = AGD.GetProfile(profileId).lastUsedBuild
-        AG.LoadSet(AGD.GetProfile().lastUsedBuild)
-    else
-        AGD.GetProfile().lastUsedBuild = false
+    if (profileId) then
+        AG.previousSet = nil
+
+        if AG.isLoadLastBuildOfProfile() then -- TODO: check what this is
+            AGD.GetProfile().lastUsedBuild = AGD.GetProfile().lastUsedBuild
+            AG.LoadSet(AGD.GetProfile().lastUsedBuild)
+        else
+            AGD.GetProfile().lastUsedBuild = false
+        end
     end
 
     AG.UpdateSetButtons()
@@ -4166,32 +4187,38 @@ end
 
 function AG.OnAddNewBuildClicked()
     AGD.CreateBuild()
+    DrawSets()
 end
 
 function AG.OnDeleteBuildClicked() -- TODO: index? gonna be in dropdown?
     -- TODO: confirmation dialog?
     local removedName = AGD.DeleteBuild()
     d("Removed build \"" .. tostring(removedName) .. "\"")
+    DrawSets()
 end
 
 function AG.OnAddNewGearClicked()
     AGD.CreateGear()
+    DrawSets()
 end
 
 function AG.OnDeleteGearClicked() -- TODO: index?
     -- TODO: confirmation?
     local removedIndex = AGD.DeleteGear()
     d(zo_strformat("Removed gear set <<1>>", removedIndex))
+    DrawSets()
 end
 
 function AG.OnNewSkillbarClicked()
     AGD.CreateSkillbar()
+    DrawSets()
 end
 
 function AG.OnDeleteSkillbarClicked() -- TODO: index?
     -- TODO: confirmation?
     local removedIndex = AGD.DeleteSkillbar()
     d(zo_strformat("Removed skill bar <<1>>", removedIndex))
+    DrawSets()
 end
 
 

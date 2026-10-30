@@ -467,7 +467,7 @@ function AGIntDlg:Setup(control)
     trace('AGIntDlg:Setup()')
 
     AGIntDlg.currentBuildNr = control.data.buildNr
-    AGIntDlg.currentBuildData = AG.setdata[AGIntDlg.currentBuildNr].Set
+    AGIntDlg.currentBuildData = AlphaGearUseReworkedData and AlphaGearDatabase.GetProfile().builds[AGIntDlg.currentBuildNr] or AG.setdata[AGIntDlg.currentBuildNr].Set
     AGIntDlg.currentBuildName = control.data.buildName
 
     -- setup common data
