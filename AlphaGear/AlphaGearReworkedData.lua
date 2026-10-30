@@ -200,6 +200,7 @@ local function trace(fmt, ...)
         d(string.format(fmt, ...))
     end
 end
+AG.trace = trace
 
 local function IndexOf(tab, item)
     for i, v in ipairs(tab) do
@@ -643,6 +644,11 @@ end
 function AG.CreateButtonBarPanel(nr, modestr, parent, width)
     local name = 'AG_Selector_'..modestr..'_'..nr
 
+    if (WM:GetControlByName(name)) then
+        trace("UI for " .. name .. " already exists")
+        return false
+    end
+
     local p = WM:CreateControl(name, parent, CT_BUTTON)
     p:SetAnchor(3, nil, 3, 0, 45*(nr-1))
     p:SetDimensions(width, 44)
@@ -657,7 +663,7 @@ function AG.CreateButtonBarPanel(nr, modestr, parent, width)
     return p
 end
 
-function AG.CreateButtonBarLabel(nr, modestr, parent)
+local function CreateButtonBarLabel(nr, modestr, parent)
     local name = 'AG_Selector_'..modestr..'_'..nr..'_Label'
 
     local c = WM:CreateControl(name, parent, CT_LABEL)
@@ -672,8 +678,9 @@ function AG.CreateButtonBarLabel(nr, modestr, parent)
 end
 
 
-function AG.DrawSkillBarButtons(nr)
+local function DrawSkillBarButtons(nr)
     local p = AG.CreateButtonBarPanel(nr, AG.MODE_SKILL, AG_PanelSkillPanelScrollChild, 299)
+    if (not p) then return end -- already exists
 
     p:SetHandler('OnMouseDown',
         function(self,button,ctrl,alt,shift)
@@ -700,14 +707,15 @@ function AG.DrawSkillBarButtons(nr)
         end
     )
 
-    AG.CreateButtonBarLabel(nr, AG.MODE_SKILL, p)
+    CreateButtonBarLabel(nr, AG.MODE_SKILL, p)
 
     -- Draw buttons for skills
     for x = 1, 6 do AG.DrawButton(p,'Button', AG.MODE_SKILL, nr, x, 46+42*(x-1), 0) end
 end
 
-function AG.DrawGearBarButtons(nr)
+local function DrawGearBarButtons(nr)
     local p = AG.CreateButtonBarPanel(nr, AG.MODE_GEAR, AG_PanelGearPanelScrollChild, 751)
+    if (not p) then return end -- already exists
 
     p:SetHandler('OnMouseDown',
         function(self,button,ctrl,alt,shift)
@@ -753,7 +761,7 @@ function AG.DrawGearBarButtons(nr)
         end
     )
 
-    AG.CreateButtonBarLabel(nr, AG.MODE_GEAR, p)
+    CreateButtonBarLabel(nr, AG.MODE_GEAR, p)
 
     -- Draw buttons for gear
     -- positions do not match order in SLOTS-Array
@@ -763,8 +771,27 @@ function AG.DrawGearBarButtons(nr)
     end
 end
 
+-- Draws all the gear, skills, and build buttons according to how many of each are in a profile
+local function DrawSets()
+    local profile = AGD.GetProfile()
 
+    -- builds
+    for x = 1, #profile.builds do
+        DrawBuild(x)
+    end
 
+    -- gear-sets
+    for x = 1, #profile.gear do
+        DrawGearBarButtons(x)
+    end
+
+    -- skill-sets
+    for x = 1, #profile.skillbars do
+        DrawSkillBarButtons(x)
+    end
+
+    -- TODO: hide unused sets
+end
 
 function AG.SetupMainPanel()
 
@@ -792,22 +819,7 @@ function AG.SetupMainPanel()
         ZO_CreateStringId('SI_BINDING_NAME_AG_SET_'..x, L.LoadSetBinding..x)
     end
 
-    local profile = AGD.GetProfile()
-
-    -- builds
-    for x = 1, #profile.builds do
-        AG.DrawBuild(x)
-    end
-
-    -- gear-sets
-    for x = 1, #profile.gear do
-        AG.DrawGearBarButtons(x)
-    end
-
-    -- skill-sets
-    for x = 1, #profile.skillbars do
-        AG.DrawSkillBarButtons(x)
-    end
+    DrawSets()
 
     -- create skill buttons (Main and Backup) in edit panel
     for x = 1,6 do
@@ -896,8 +908,13 @@ function AG.HideEditPanel()
 end
 
 
-function AG.DrawBuild(nr)
+local function DrawBuild(nr)
     trace ("DrawBuild")
+
+    if (WM:GetControlByName("AG_SetSelector_" .. nr)) then
+        trace("UI for build " .. nr .. " already exists")
+        return
+    end
 
     local panelWidth = 427
 
@@ -1047,6 +1064,7 @@ function AG.DrawSetButtonsUI()
     trace ("DrawSetButtonsUI")
 
     local xpos, ypos, c = 0, 27, nil
+    local numBuildButtons = AGD.GetCharacter().numBuildButtons
     local profile = AGD.GetProfile()
     for x = 1, #profile.builds do -- TODO: check if this is properly updated
         c = WM:GetControlByName('AG_UI_SetButton_'..x)
@@ -1068,15 +1086,15 @@ function AG.DrawSetButtonsUI()
         end
         c:ClearAnchors()
         c:SetAnchor(3,AG_SetButtonFrame,3,xpos,ypos)
-        if x > profile.numBuildButtons then c:SetHidden(true) else c:SetHidden(false) end
-        if x == math.ceil(AGD.GetProfile().numBuildButtons/2) then ypos = ypos + 29; xpos = 0
+        if x > numBuildButtons then c:SetHidden(true) else c:SetHidden(false) end
+        if x == math.ceil(numBuildButtons/2) then ypos = ypos + 29; xpos = 0
         else xpos = xpos + 29 end
     end
 end
 
 
 
-
+-- TODO: this is kinda convoluted. would be better to pass stuff into the UI-updating functions instead of parsing control names
 function AG.GetButton(c)
     local res, name = {}, {string.match(c:GetName(),'AG_(%a+)_(%a+)_(%d+)_(%d+)')}
     table.insert(res, name[2])
@@ -2315,6 +2333,7 @@ function AG.UpdateSetButtons()
     AG_SetButtonFrameProfileName:SetText(profileLabel)
 end
 
+-- Looks through bag for updated item links (maybe because of gear improvements or enchants?)
 function AG.UpdateItemLinks()
     trace("UpdateItemLinks")
     for setId, set in ipairs(AGD.GetProfile().builds) do
@@ -2336,7 +2355,7 @@ function AG.UpdateItemLinks()
     end
 end
 
--- Seems to just be for updating the builds list
+-- Seems to mostly be for updating the builds list; skills and gear are handled in their own loops for some reason
 function AG.UpdateUI(from,to)
     trace('UpdateUI')
     if AG_Panel:IsHidden() then
@@ -3361,7 +3380,7 @@ function AG.ShowButton(c)
     local type, nr, slot = AG.GetButton(c)
     local skill, gear = AGD.GetProfile().skillbars[nr], AGD.GetProfile().gear[nr]
     if type == AG.MODE_SKILL then
-        if skill[slot] ~= 0 then
+        if skill[slot] and skill[slot] ~= 0 then
             local icon = GetAbilityTexture(skill[slot])
             c:SetNormalTexture(icon)
             c.data = { hint = L.Button[type] }
@@ -3370,7 +3389,7 @@ function AG.ShowButton(c)
             c.data = nil
         end
     else
-        if gear[slot].link ~= 0 then
+        if gear[slot].link and gear[slot].link ~= 0 then
             c:SetNormalTexture(GetItemLinkInfo(gear[slot].link))
             c:GetNamedChild('Bg'):SetCenterColor(Quality(gear[slot].link,0.5))
             c.data = { hint = L.Button[type] }
@@ -3952,8 +3971,7 @@ function AG.CheckSkillId (nr, skillnr)
 end
 
 
---- loads profile with Id profileId as current set-list.
--- stores the current set-list under its profileId
+--- loads profile with Id profileId and updates the UI
 function AG.LoadProfile(profileId)
 
     trace("AG.LoadProfile %d", profileId)
@@ -3973,11 +3991,15 @@ function AG.LoadProfile(profileId)
     AGD.GetCharacter().currentProfileId = profileId
     local profile = AGD.GetProfile()
 
+    -- First draw appropriate number of lines for each type
+    DrawSets()
+
     -- update UI and equip set
     -- skills & gear
 
     AG.UpdateItemLinks()
 
+    -- Update textures
     for i = 1, #profile.skillbars do
         for slotId = 1, 6 do
             AG.ShowButton(WM:GetControlByName('AG_Button_Skill_'..setIndex..'_'..slotId))
@@ -4010,6 +4032,7 @@ end
 
 --- loads profile with the bindId profileBindId as current set-list.
 -- stores the current set-list under its profileId
+-- TODO: why is this needed?
 function AG.LoadProfileByBindID(profileBindId)
     AG.LoadProfile(profileBindId)
 end

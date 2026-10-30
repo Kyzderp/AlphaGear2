@@ -52,6 +52,34 @@ AGD.IsProfileEmpty = IsProfileEmpty
 ---------------------------------------------------------------------
 -- Migration
 ---------------------------------------------------------------------
+local function InitEmptyBuild(index)
+    return {
+        text = {"Build " .. index},
+        icon = {},
+        skill = {},
+    }
+end
+
+local function InitEmptyProfile(name, sortKey, lastUsedBuild)
+    return {
+        skillbars = {},
+        gear = {},
+        builds = {},
+        name = name,
+        sortKey = sortKey or "",
+        lastUsedBuild = lastUsedBuild or false,
+    }
+end
+
+local function InitEmptyCharacter(name, numBuildButtons)
+    return {
+        profiles = {}, -- {[1] = {skillbars = {}, gear = {}, builds = {}}}
+        currentProfileId = 1,
+        characterName = name,
+        numBuildButtons = numBuildButtons or 16,
+    }
+end
+
 local function MigrateData()
     if (not AGX2_Character) then
         AGX2_Character = {}
@@ -82,11 +110,7 @@ local function MigrateData()
             profileTable.setdata.lastset = charTable.setdata.lastset
 
             -- Make the new struct. Key will be character ID
-            local newData = {
-                profiles = {}, -- {[1] = {skillbars = {}, gear = {}, builds = {}}}
-                currentProfileId = currentProfileId,
-                characterName = name,
-            }
+            local newData = InitEmptyCharacter(name, charTable.setamount)
 
             for profileId, profileData in pairs(charTable.profiles) do
                 -- We want to remove the last x empty sets of each type, e.g. if there's gear in only slots 1 and 4, we can remove everything from 5 onward.
@@ -129,18 +153,10 @@ local function MigrateData()
                 end
 
                 if (lastNonEmptyBuild == 0 and lastNonEmptyGear == 0 and lastNonEmptySkill == 0) then
-                    d(string.format("Profile \"%s\" (%s) is empty, not migrating the data.", profileData.name, profileId))
+                    AG.trace(string.format("Profile \"%s\" (%s) is empty, not migrating the data.", profileData.name, profileId))
                 else
                     -- Finally can copy everything up until the non-empty ones
-                    newData.profiles[profileId] = {
-                        skillbars = {},
-                        gear = {},
-                        builds = {},
-                        lastUsedBuild = profileData.lastset, -- TODO: is this from character data?
-                        numBuildButtons = profileData.setamount, -- TODO: is this from character data?
-                        sortKey = profileData.sortKey,
-                        name = profileData.name,
-                    }
+                    newData.profiles[profileId] = InitEmptyProfile(profileData.name, profileData.sortKey, profileData.lastset)
                     local newProfile = newData.profiles[profileId]
 
                     for i = 1, lastNonEmptySkill do
@@ -153,11 +169,24 @@ local function MigrateData()
                         newProfile.builds[i] = ZO_DeepTableCopy(profileData[i].Set)
                     end
 
-                    -- TODO: if everything was deleted, add at least 1 empty skillbar / gear set
+                    -- If everything of a type was deleted, add at least 1 empty set
+                    if (lastNonEmptySkill == 0) then
+                        newProfile.skillbars[1] = {}
+                    end
+                    if (lastNonEmptyGear == 0) then
+                        newProfile.gear[1] = {}
+                    end
+                    if (lastNonEmptyBuild == 0) then
+                        newProfile.builds[1] = InitEmptyBuild(1)
+                    end
                 end
             end
             accTable[charId] = newData
             accTable[name] = nil
+        else
+            -- Nothing to migrate, just create empty
+            accTable[charId] = InitEmptyCharacter(name)
+            accTable[charid].profiles[1] = InitEmptyProfile(1)
         end
     end
 end
@@ -198,7 +227,6 @@ AGD.GetCharacter = GetCurrentCharacterTable
     skillbars = {},
     gear = {},
     builds = {},
-    numBuildButtons = 16,
     lastUsedBuild = false,
 }
 ]]
@@ -232,13 +260,7 @@ local function CreateProfile(profileId)
     profileId = profileId or FindUnusedProfileId()
 
     local charTable = GetCurrentCharacterTable()
-    charTable.profiles[profileId] = {
-        skillbars = {},
-        gear = {},
-        builds = {},
-        lastUsedBuild = 1, -- TODO
-        numBuildButtons = 16, -- TODO
-    }
+    charTable.profiles[profileId] = InitEmptyProfile("Profile " .. profileId)
     return profileId
 end
 AGD.CreateProfile = CreateProfile
@@ -259,11 +281,7 @@ AGD.DeleteProfile = DeleteProfile
 -- Initializes values in new build. Builds are always contiguous
 local function CreateBuild()
     local profileTable = GetProfileTable()
-    table.insert(profileTable.builds, {
-        text = {
-            [1] = "Build " .. (#profileTable.builds + 1)
-        }
-    })
+    table.insert(profileTable.builds, InitEmptyBuild(#profileTable.builds + 1))
 end
 AGD.CreateBuild = CreateBuild
 
