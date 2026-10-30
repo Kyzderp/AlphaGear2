@@ -97,17 +97,17 @@ local function MigrateData()
     -- In-place migration for each known character: this is because we don't know the char IDs or names of the other megaserver
     for charIndex = 1, GetNumCharacters() do
         local name, _, _, _, _, _, charId = GetCharacterInfo(charIndex)
+        name = zo_strformat("<<1>>", name) -- it's returned with ^Mx
 
         -- Existing table for this character NAME, meaning it has not yet been migrated
         local charTable = accTable[name]
         if (charTable) then
             -- First, store the currently active set into profiles, because we won't be using currently active sets anymore
             local profileTable = charTable.profiles[charTable.currentProfileId]
-            ZO_ClearTable(profileTable)
             for i = 1, 16 do -- the old max
-                profileTable.setdata[i] = charTable.setdata[i]
+                profileTable.setdata[i] = charTable[i]
             end
-            profileTable.setdata.lastset = charTable.setdata.lastset
+            profileTable.setdata.lastset = charTable.lastset
 
             -- Make the new struct. Key will be character ID
             local newData = InitEmptyCharacter(name, charTable.setamount)
@@ -121,72 +121,78 @@ local function MigrateData()
                 local usedGearSets = {} -- map
                 local usedSkillSets = {}
 
-                -- Do a first pass to determine what is empty until the end, so we can delete excess
-                -- The old stuff should be contiguous
-                for i = 1, 16 do
-                    if (not IsSkillBarEmpty(profileData[i].Skill)) then
-                        lastNonEmptySkill = i
-                    end
-
-                    if (not IsGearEmpty(profileData[i].Gear)) then
-                        lastNonEmptyGear = i
-                    end
-
-                    if (not IsBuildEmpty(profileData[i].Set)) then
-                        lastNonEmptyBuild = i
-                    end
-
-                    -- Save linked stuff
-                    usedGearSets[profileData[i].Set.gear] = true
-                    usedSkillSets[profileData[i].Set.skill[1]] = true
-                    usedSkillSets[profileData[i].Set.skill[2]] = true
-                end
-
-                -- Find the last linked gear and skills
-                for i = 16, 1, -1 do
-                    if (usedGearSets[i] and i > lastNonEmptyGear) then
-                        lastNonEmptyGear = i
-                    end
-                    if (usedSkillSets[i] and i > lastNonEmptySkill) then
-                        lastNonEmptySkill = i
-                    end
-                end
-
-                if (lastNonEmptyBuild == 0 and lastNonEmptyGear == 0 and lastNonEmptySkill == 0) then
-                    AG.trace(string.format("Profile \"%s\" (%s) is empty, not migrating the data.", profileData.name, profileId))
+                -- Could be an uninitialized profile from before
+                if (not profileData.setdata) then
+                    AG.trace(string.format("Profile \"%s\" (%s) is uninitialized, not migrating the data.", profileData.name, profileId))
                 else
-                    -- Finally can copy everything up until the non-empty ones
-                    newData.profiles[profileId] = InitEmptyProfile(profileData.name, profileData.sortKey, profileData.lastset)
-                    local newProfile = newData.profiles[profileId]
+                    -- Do a first pass to determine what is empty until the end, so we can delete excess
+                    -- The old stuff should be contiguous
+                    for i = 1, 16 do
+                        if (not IsSkillBarEmpty(profileData.setdata[i].Skill)) then
+                            lastNonEmptySkill = i
+                        end
 
-                    for i = 1, lastNonEmptySkill do
-                        newProfile.skillbars[i] = ZO_DeepTableCopy(profileData[i].Skill)
-                    end
-                    for i = 1, lastNonEmptyGear do
-                        newProfile.gear[i] = ZO_DeepTableCopy(profileData[i].Gear)
-                    end
-                    for i = 1, lastNonEmptyBuild do
-                        newProfile.builds[i] = ZO_DeepTableCopy(profileData[i].Set)
+                        if (not IsGearEmpty(profileData.setdata[i].Gear)) then
+                            lastNonEmptyGear = i
+                        end
+
+                        if (not IsBuildEmpty(profileData.setdata[i].Set)) then
+                            lastNonEmptyBuild = i
+                        end
+
+                        -- Save linked stuff
+                        usedGearSets[profileData.setdata[i].Set.gear] = true
+                        usedSkillSets[profileData.setdata[i].Set.skill[1]] = true
+                        usedSkillSets[profileData.setdata[i].Set.skill[2]] = true
                     end
 
-                    -- If everything of a type was deleted, add at least 1 empty set
-                    if (lastNonEmptySkill == 0) then
-                        newProfile.skillbars[1] = {}
+                    -- Find the last linked gear and skills
+                    for i = 16, 1, -1 do
+                        if (usedGearSets[i] and i > lastNonEmptyGear) then
+                            lastNonEmptyGear = i
+                        end
+                        if (usedSkillSets[i] and i > lastNonEmptySkill) then
+                            lastNonEmptySkill = i
+                        end
                     end
-                    if (lastNonEmptyGear == 0) then
-                        newProfile.gear[1] = {}
-                    end
-                    if (lastNonEmptyBuild == 0) then
-                        newProfile.builds[1] = InitEmptyBuild(1)
+
+                    if (lastNonEmptyBuild == 0 and lastNonEmptyGear == 0 and lastNonEmptySkill == 0) then
+                        AG.trace(string.format("Profile \"%s\" (%s) is empty, not migrating the data.", profileData.name, profileId))
+                    else
+                        -- Finally can copy everything up until the non-empty ones
+                        newData.profiles[profileId] = InitEmptyProfile(profileData.name, profileData.sortKey, profileData.lastset)
+                        local newProfile = newData.profiles[profileId]
+
+                        for i = 1, lastNonEmptySkill do
+                            newProfile.skillbars[i] = ZO_DeepTableCopy(profileData.setdata[i].Skill)
+                        end
+                        for i = 1, lastNonEmptyGear do
+                            newProfile.gear[i] = ZO_DeepTableCopy(profileData.setdata[i].Gear)
+                        end
+                        for i = 1, lastNonEmptyBuild do
+                            newProfile.builds[i] = ZO_DeepTableCopy(profileData.setdata[i].Set)
+                        end
+
+                        -- If everything of a type was deleted, add at least 1 empty set
+                        if (lastNonEmptySkill == 0) then
+                            newProfile.skillbars[1] = {}
+                        end
+                        if (lastNonEmptyGear == 0) then
+                            newProfile.gear[1] = {}
+                        end
+                        if (lastNonEmptyBuild == 0) then
+                            newProfile.builds[1] = InitEmptyBuild(1)
+                        end
                     end
                 end
             end
             accTable[charId] = newData
             accTable[name] = nil
-        else
+        elseif (not accTable[charId]) then
             -- Nothing to migrate, just create empty
             accTable[charId] = InitEmptyCharacter(name)
-            accTable[charid].profiles[1] = InitEmptyProfile(1)
+            local newCharTable = accTable[charId]
+            newCharTable.profiles[1] = InitEmptyProfile(1)
         end
     end
 end

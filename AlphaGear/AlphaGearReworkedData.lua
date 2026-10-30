@@ -1,5 +1,5 @@
 -- Uncomment this to use new data structures
--- AlphaGearUseReworkedData = true
+AlphaGearUseReworkedData = true
 if (not AlphaGearUseReworkedData) then return end
 
 AG = {} -- not very unique, but at this point changing it might break other addons' integrations
@@ -195,7 +195,7 @@ local TWINSLOTS = {
 -- fmt with %d, %s,
 local function trace(fmt, ...)
     if (AG.isDebug and agLFCPFilter) then
-        agLFCPFilter:AddMessage()
+        agLFCPFilter:AddMessage(string.format(fmt, ...))
     elseif AG.isDebug then
         d(string.format(fmt, ...))
     end
@@ -640,13 +640,13 @@ function AG.DrawButton(p, name, btn, nr, x, xpos, ypos, show)
     end
 end
 
-
+-- returns: control, alreadyExists
 function AG.CreateButtonBarPanel(nr, modestr, parent, width)
     local name = 'AG_Selector_'..modestr..'_'..nr
 
     if (WM:GetControlByName(name)) then
         trace("UI for " .. name .. " already exists")
-        return false
+        return WM:GetControlByName(name), true
     end
 
     local p = WM:CreateControl(name, parent, CT_BUTTON)
@@ -677,243 +677,18 @@ local function CreateButtonBarLabel(nr, modestr, parent)
     c:SetText(nr)
 end
 
-
-local function DrawSkillBarButtons(nr)
-    local p = AG.CreateButtonBarPanel(nr, AG.MODE_SKILL, AG_PanelSkillPanelScrollChild, 299)
-    if (not p) then return end -- already exists
-
-    p:SetHandler('OnMouseDown',
-        function(self,button,ctrl,alt,shift)
-            if button == 2 then
-                AG.DrawMenu(self, {true, (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_SKILLS),
-                        true, true, false, false})
-                MENU.nr = nr
-                MENU.type = AG.MENU_TYPE_SKILLS
-            elseif shift then
-                if button == 1 then
-                    AG.GetSkillFromBar(nr)
-                    AG.UpdateEditPanel(nr)
-                end
-            elseif button == 1 then
-                if SELECTBAR then
-                    AGD.GetProfile().builds[SELECT].skill[SELECTBAR] = nr
-                    AG.SetConnect(AG.MODE_SKILL, 2)
-                    SELECTBAR = false
-                    AG.UpdateEditPanel(SELECT)
-                else
-                    AG.LoadBar(nr)
-                end
-            end
-        end
-    )
-
-    CreateButtonBarLabel(nr, AG.MODE_SKILL, p)
-
-    -- Draw buttons for skills
-    for x = 1, 6 do AG.DrawButton(p,'Button', AG.MODE_SKILL, nr, x, 46+42*(x-1), 0) end
-end
-
-local function DrawGearBarButtons(nr)
-    local p = AG.CreateButtonBarPanel(nr, AG.MODE_GEAR, AG_PanelGearPanelScrollChild, 751)
-    if (not p) then return end -- already exists
-
-    p:SetHandler('OnMouseDown',
-        function(self,button,ctrl,alt,shift)
-            if button == 2 then
-                -- open context menu
-                local isBanking = IMGR:IsBanking()
-
-                AG.DrawMenu(self, {true, (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_GEAR), true, true, isBanking, isBanking, isBanking, isBanking})
-                MENU.nr = nr
-                MENU.type = AG.MENU_TYPE_GEAR
-            elseif shift then
-                if button == 1 then
-                    -- inser currently equipped
-                    MENU.type = AG.MENU_TYPE_GEAR
-                    MENU.nr = nr
-                    AG.MenuAction(3)
-                    AG.UpdateEditPanel(SELECT)
-                end
-            elseif button == 1 then
-                if SELECTBAR then
-                    -- use selected gear set in build
-
-                    -- remove icon from old set
-                    local removedGearId = AGD.GetProfile().builds[SELECT].gear
-                    if removedGearId ~= 0 then
-                        AG.handleRemoveGearSetFromBuild(SELECT)
-                    end
-
-                    -- change gear set
-                    AGD.GetProfile().builds[SELECT].gear = nr
-
-                    -- set icon for new set
-                    AG.handleAssignGearSetToBuild(SELECT)
-
-                    AG.SetConnect(AG.MODE_GEAR, 2)
-                    SELECTBAR = false
-                    AG.UpdateEditPanel(SELECT)
-                else
-                    -- equipp gear
-                    AG.LoadGear(nr)
-                end
-            end
-        end
-    )
-
-    CreateButtonBarLabel(nr, AG.MODE_GEAR, p)
-
-    -- Draw buttons for gear
-    -- positions do not match order in SLOTS-Array
-    local positions = {1,2,4,5,7,8,9,10,11,12,13,14,15,16,3,6}
-    for x = 1, #SLOTS do
-        AG.DrawButton(p,'Button', AG.MODE_GEAR, nr, x, 46+44*(positions[x]-1), 0)
-    end
-end
-
--- Draws all the gear, skills, and build buttons according to how many of each are in a profile
-local function DrawSets()
-    local profile = AGD.GetProfile()
-
-    -- builds
-    for x = 1, #profile.builds do
-        DrawBuild(x)
-    end
-
-    -- gear-sets
-    for x = 1, #profile.gear do
-        DrawGearBarButtons(x)
-    end
-
-    -- skill-sets
-    for x = 1, #profile.skillbars do
-        DrawSkillBarButtons(x)
-    end
-
-    -- TODO: hide unused sets
-end
-
-function AG.SetupMainPanel()
-
-    -- Create Key Binding Labels
-    ZO_CreateStringId('SI_BINDING_NAME_SHOW_AG_WINDOW', L.ShowMainBinding)
-    ZO_CreateStringId('SI_BINDING_NAME_AG_UNDRESS', L.UneqipAllBinding)
-    ZO_CreateStringId('SI_BINDING_NAME_AG_NEXT_SET', L.BindLoadNextSet)
-    ZO_CreateStringId('SI_BINDING_NAME_AG_PREVIOUS_SET', L.BindLoadPreviousSet)
-    ZO_CreateStringId('SI_BINDING_NAME_AG_TOGGLE_SET', L.BindToggleSet)
-
-    ZO_CreateStringId('SI_BINDING_NAME_AG_NEXT_PROFILE', L.BindLoadNextProfile)
-    ZO_CreateStringId('SI_BINDING_NAME_AG_PREVIOUS_PROFILE', L.BindLoadPreviousProfile)
-    ZO_CreateStringId('SI_BINDING_NAME_AG_TOGGLE_PROFILE', L.BindToggleProfile)
-
-
-    for pindex = 1, OLD_MAX_PROFILES do
-        -- Create Key Binding Label
-        ZO_CreateStringId('SI_BINDING_NAME_AG_PROFILE_'..pindex, L.BindLoadProfile..pindex)
-    end
-
-
-    -- create MAXSLOT keybinds
-    for x = 1, MAX_BINDABLE_BUILDS do
-        -- Create Key Binding Label
-        ZO_CreateStringId('SI_BINDING_NAME_AG_SET_'..x, L.LoadSetBinding..x)
-    end
-
-    DrawSets()
-
-    -- create skill buttons (Main and Backup) in edit panel
-    for x = 1,6 do
-        AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar1PanelSkill11Box,'Edit', AG.MODE_SKILL, 1,x,42*(x-1),0,true)
-        AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar2PanelSkill21Box,'Edit', AG.MODE_SKILL, 2,x,42*(x-1),0,true)
-    end
-
-    -- create weapon buttons (Main and Backup) in skill edit panel
-    for x = 1,2 do
-        AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar1PanelWeap1Box,'Edit', AG.MODE_GEAR, 1, x, 42*(x-1), 0, true)
-        AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar2PanelWeap2Box,'Edit', AG.MODE_GEAR, 1, x+2, 42*(x-1), 0, true)
-    end
-
-    -- create poison buttons (Main and Backup) in skill edit panel
-    AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar1PanelWeap1Box,'Edit', AG.MODE_GEAR, 1, 15, 84, 0, true)
-    AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar2PanelWeap2Box,'Edit', AG.MODE_GEAR, 1, 16, 84, 0, true)
-
-    -- create gear buttons, row 1 in edit panel
-    for x = 5,11 do AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetGearPanelGear1Box,'Edit', AG.MODE_GEAR, 1,x,42*(x-5),0,true) end
-
-    -- create gear buttons, row 2 in edit panel
-    for x = 12,14 do AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetGearPanelGear2Box,'Edit', AG.MODE_GEAR, 1,x,42*(x-12),0,true) end
-
-
-    -- ZO_PreHook('ZO_Skills_AbilitySlot_OnDragStart', AG.OnSkillDragStart)
-
-    -- ZO_PreHook('ZO_InventorySlot_OnDragStart', AG.OnItemDragStart)
-
-    ZO_PreHookHandler(AG_PanelMenu,'OnShow',
-        function()
-            zo_callLater(
-                function()
-                    EM:RegisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP,
-                        function()
-                            AG_PanelMenu:SetHidden(true)
-                            EM:UnregisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP)
-                        end
-                    )
-                end
-            , 250)
-        end
-    )
-
-    ZO_PreHookHandler(ZO_Skills,'OnShow', AG.OnShowSkills)
-    ZO_PreHookHandler(ZO_Skills,'OnHide', AG.OnHideSkills)
-    ZO_PreHookHandler(ZO_PlayerInventory,'OnShow', AG.OnShowInventory)
-    ZO_PreHookHandler(ZO_PlayerInventory,'OnHide', AG.OnHideInventory)
-    ZO_PreHookHandler(ZO_ChampionPerks,'OnShow', function() SM:HideTopLevel(AG_Panel) end)
-    ZO_PreHookHandler(AG_Panel,'OnHide',
-        function()
-            AG_PanelIcons:SetHidden(true)
-        end
-    )
-
-    AG_PanelIcons.useFadeGradient = false
-    AG_PanelSetPanel.useFadeGradient = false
-    AG_PanelGearPanel.useFadeGradient = false
-    AG_PanelSkillPanel.useFadeGradient = false
-
-    AG_UI_Button.data = { tip = AG.name }
-    AG_PanelUndressArmor.data = { info = L.Unequip }
-    AG_PanelUndressAll.data = { info = L.UnequipAll }
-    AG_PanelProfilePanelEditProfileButton.data = { info = "Edit profile properties" }
-    AG_PanelProfilePanelImportProfileButton.data = { info = "Import another profile" }
-    AG_PanelSetPanelScrollChildEditPanelSetGearPanelGearLock.data = { info = L.Lock }
-
-    AG.SetupProfileCombo()
-end
-
-
-
-function AG.HideEditPanel()
-    local ctrlEP = AG_PanelSetPanelScrollChildEditPanel
-
-    local anchor = {ctrlEP:GetAnchor()}
-
-    -- close editpanel
-    if not ctrlEP:IsHidden() and anchor[3] then
-        anchor[3]:SetHeight(76)
-        ctrlEP:SetHidden(true)
-        anchor[3]:GetNamedChild('Box'):SetHidden(false)
-        anchor[3]:GetNamedChild('Edit'):SetHidden(true)
-        anchor[3]:GetNamedChild('BoxBg'):SetHidden(true)
-        anchor[3]:GetNamedChild('AdvBtn'):SetHidden(true)
-    end
-end
-
-
+local maxBuildsCreated = 0
 local function DrawBuild(nr)
     trace ("DrawBuild")
 
     if (WM:GetControlByName("AG_SetSelector_" .. nr)) then
         trace("UI for build " .. nr .. " already exists")
+        WM:GetControlByName("AG_SetSelector_" .. nr):SetHidden(false)
         return
+    end
+
+    if (nr > maxBuildsCreated) then
+        maxBuildsCreated = nr
     end
 
     local panelWidth = 427
@@ -1056,6 +831,257 @@ local function DrawBuild(nr)
 
 end
 
+local maxSkillbarsCreated = 0
+local function DrawSkillBarButtons(nr)
+    local p, exists = AG.CreateButtonBarPanel(nr, AG.MODE_SKILL, AG_PanelSkillPanelScrollChild, 299)
+    if (exists) then
+        p:SetHidden(false)
+        return
+    end
+
+    if (nr > maxSkillbarsCreated) then
+        maxSkillbarsCreated = nr
+    end
+
+    p:SetHandler('OnMouseDown',
+        function(self,button,ctrl,alt,shift)
+            if button == 2 then
+                AG.DrawMenu(self, {true, (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_SKILLS),
+                        true, true, false, false})
+                MENU.nr = nr
+                MENU.type = AG.MENU_TYPE_SKILLS
+            elseif shift then
+                if button == 1 then
+                    AG.GetSkillFromBar(nr)
+                    AG.UpdateEditPanel(nr)
+                end
+            elseif button == 1 then
+                if SELECTBAR then
+                    AGD.GetProfile().builds[SELECT].skill[SELECTBAR] = nr
+                    AG.SetConnect(AG.MODE_SKILL, 2)
+                    SELECTBAR = false
+                    AG.UpdateEditPanel(SELECT)
+                else
+                    AG.LoadBar(nr)
+                end
+            end
+        end
+    )
+
+    CreateButtonBarLabel(nr, AG.MODE_SKILL, p)
+
+    -- Draw buttons for skills
+    for x = 1, 6 do AG.DrawButton(p,'Button', AG.MODE_SKILL, nr, x, 46+42*(x-1), 0) end
+end
+
+local maxGearCreated = 0
+local function DrawGearBarButtons(nr)
+    local p, exists = AG.CreateButtonBarPanel(nr, AG.MODE_GEAR, AG_PanelGearPanelScrollChild, 751)
+    if (exists) then
+        p:SetHidden(false)
+        return
+    end
+
+    if (nr > maxGearCreated) then
+        maxGearCreated = nr
+    end
+
+    p:SetHandler('OnMouseDown',
+        function(self,button,ctrl,alt,shift)
+            if button == 2 then
+                -- open context menu
+                local isBanking = IMGR:IsBanking()
+
+                AG.DrawMenu(self, {true, (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_GEAR), true, true, isBanking, isBanking, isBanking, isBanking})
+                MENU.nr = nr
+                MENU.type = AG.MENU_TYPE_GEAR
+            elseif shift then
+                if button == 1 then
+                    -- inser currently equipped
+                    MENU.type = AG.MENU_TYPE_GEAR
+                    MENU.nr = nr
+                    AG.MenuAction(3)
+                    AG.UpdateEditPanel(SELECT)
+                end
+            elseif button == 1 then
+                if SELECTBAR then
+                    -- use selected gear set in build
+
+                    -- remove icon from old set
+                    local removedGearId = AGD.GetProfile().builds[SELECT].gear
+                    if removedGearId ~= 0 then
+                        AG.handleRemoveGearSetFromBuild(SELECT)
+                    end
+
+                    -- change gear set
+                    AGD.GetProfile().builds[SELECT].gear = nr
+
+                    -- set icon for new set
+                    AG.handleAssignGearSetToBuild(SELECT)
+
+                    AG.SetConnect(AG.MODE_GEAR, 2)
+                    SELECTBAR = false
+                    AG.UpdateEditPanel(SELECT)
+                else
+                    -- equipp gear
+                    AG.LoadGear(nr)
+                end
+            end
+        end
+    )
+
+    CreateButtonBarLabel(nr, AG.MODE_GEAR, p)
+
+    -- Draw buttons for gear
+    -- positions do not match order in SLOTS-Array
+    local positions = {1,2,4,5,7,8,9,10,11,12,13,14,15,16,3,6}
+    for x = 1, #SLOTS do
+        AG.DrawButton(p,'Button', AG.MODE_GEAR, nr, x, 46+44*(positions[x]-1), 0)
+    end
+end
+
+-- Draws all the gear, skills, and build buttons according to how many of each are in a profile
+local function DrawSets()
+    local profile = AGD.GetProfile()
+
+    -- builds
+    for x = 1, #profile.builds do
+        DrawBuild(x)
+    end
+    for toHide = #profile.builds + 1, maxBuildsCreated do
+        WM:GetControlByName("AG_SetSelector_" .. toHide):SetHidden(true)
+    end
+
+    -- gear-sets
+    for x = 1, #profile.gear do
+        DrawGearBarButtons(x)
+    end
+    for toHide = #profile.gear + 1, maxGearCreated do
+        WM:GetControlByName("AG_Selector_Gear_" .. toHide):SetHidden(true)
+    end
+
+    -- skill-sets
+    for x = 1, #profile.skillbars do
+        DrawSkillBarButtons(x)
+    end
+    for toHide = #profile.skillbars + 1, maxSkillbarsCreated do
+        WM:GetControlByName("AG_Selector_Skill_" .. toHide):SetHidden(true)
+    end
+end
+
+function AG.SetupMainPanel()
+
+    -- Create Key Binding Labels
+    ZO_CreateStringId('SI_BINDING_NAME_SHOW_AG_WINDOW', L.ShowMainBinding)
+    ZO_CreateStringId('SI_BINDING_NAME_AG_UNDRESS', L.UneqipAllBinding)
+    ZO_CreateStringId('SI_BINDING_NAME_AG_NEXT_SET', L.BindLoadNextSet)
+    ZO_CreateStringId('SI_BINDING_NAME_AG_PREVIOUS_SET', L.BindLoadPreviousSet)
+    ZO_CreateStringId('SI_BINDING_NAME_AG_TOGGLE_SET', L.BindToggleSet)
+
+    ZO_CreateStringId('SI_BINDING_NAME_AG_NEXT_PROFILE', L.BindLoadNextProfile)
+    ZO_CreateStringId('SI_BINDING_NAME_AG_PREVIOUS_PROFILE', L.BindLoadPreviousProfile)
+    ZO_CreateStringId('SI_BINDING_NAME_AG_TOGGLE_PROFILE', L.BindToggleProfile)
+
+
+    for pindex = 1, OLD_MAX_PROFILES do
+        -- Create Key Binding Label
+        ZO_CreateStringId('SI_BINDING_NAME_AG_PROFILE_'..pindex, L.BindLoadProfile..pindex)
+    end
+
+
+    -- create MAXSLOT keybinds
+    for x = 1, MAX_BINDABLE_BUILDS do
+        -- Create Key Binding Label
+        ZO_CreateStringId('SI_BINDING_NAME_AG_SET_'..x, L.LoadSetBinding..x)
+    end
+
+    DrawSets()
+
+    -- create skill buttons (Main and Backup) in edit panel
+    for x = 1,6 do
+        AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar1PanelSkill11Box,'Edit', AG.MODE_SKILL, 1,x,42*(x-1),0,true)
+        AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar2PanelSkill21Box,'Edit', AG.MODE_SKILL, 2,x,42*(x-1),0,true)
+    end
+
+    -- create weapon buttons (Main and Backup) in skill edit panel
+    for x = 1,2 do
+        AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar1PanelWeap1Box,'Edit', AG.MODE_GEAR, 1, x, 42*(x-1), 0, true)
+        AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar2PanelWeap2Box,'Edit', AG.MODE_GEAR, 1, x+2, 42*(x-1), 0, true)
+    end
+
+    -- create poison buttons (Main and Backup) in skill edit panel
+    AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar1PanelWeap1Box,'Edit', AG.MODE_GEAR, 1, 15, 84, 0, true)
+    AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetBar2PanelWeap2Box,'Edit', AG.MODE_GEAR, 1, 16, 84, 0, true)
+
+    -- create gear buttons, row 1 in edit panel
+    for x = 5,11 do AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetGearPanelGear1Box,'Edit', AG.MODE_GEAR, 1,x,42*(x-5),0,true) end
+
+    -- create gear buttons, row 2 in edit panel
+    for x = 12,14 do AG.DrawButton(AG_PanelSetPanelScrollChildEditPanelSetGearPanelGear2Box,'Edit', AG.MODE_GEAR, 1,x,42*(x-12),0,true) end
+
+
+    -- ZO_PreHook('ZO_Skills_AbilitySlot_OnDragStart', AG.OnSkillDragStart)
+
+    -- ZO_PreHook('ZO_InventorySlot_OnDragStart', AG.OnItemDragStart)
+
+    ZO_PreHookHandler(AG_PanelMenu,'OnShow',
+        function()
+            zo_callLater(
+                function()
+                    EM:RegisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP,
+                        function()
+                            AG_PanelMenu:SetHidden(true)
+                            EM:UnregisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP)
+                        end
+                    )
+                end
+            , 250)
+        end
+    )
+
+    ZO_PreHookHandler(ZO_Skills,'OnShow', AG.OnShowSkills)
+    ZO_PreHookHandler(ZO_Skills,'OnHide', AG.OnHideSkills)
+    ZO_PreHookHandler(ZO_PlayerInventory,'OnShow', AG.OnShowInventory)
+    ZO_PreHookHandler(ZO_PlayerInventory,'OnHide', AG.OnHideInventory)
+    ZO_PreHookHandler(ZO_ChampionPerks,'OnShow', function() SM:HideTopLevel(AG_Panel) end)
+    ZO_PreHookHandler(AG_Panel,'OnHide',
+        function()
+            AG_PanelIcons:SetHidden(true)
+        end
+    )
+
+    AG_PanelIcons.useFadeGradient = false
+    AG_PanelSetPanel.useFadeGradient = false
+    AG_PanelGearPanel.useFadeGradient = false
+    AG_PanelSkillPanel.useFadeGradient = false
+
+    AG_UI_Button.data = { tip = AG.name }
+    AG_PanelUndressArmor.data = { info = L.Unequip }
+    AG_PanelUndressAll.data = { info = L.UnequipAll }
+    AG_PanelProfilePanelEditProfileButton.data = { info = "Edit profile properties" }
+    AG_PanelProfilePanelImportProfileButton.data = { info = "Import another profile" }
+    AG_PanelSetPanelScrollChildEditPanelSetGearPanelGearLock.data = { info = L.Lock }
+
+    AG.SetupProfileCombo()
+end
+
+
+
+function AG.HideEditPanel()
+    local ctrlEP = AG_PanelSetPanelScrollChildEditPanel
+
+    local anchor = {ctrlEP:GetAnchor()}
+
+    -- close editpanel
+    if not ctrlEP:IsHidden() and anchor[3] then
+        anchor[3]:SetHeight(76)
+        ctrlEP:SetHidden(true)
+        anchor[3]:GetNamedChild('Box'):SetHidden(false)
+        anchor[3]:GetNamedChild('Edit'):SetHidden(true)
+        anchor[3]:GetNamedChild('BoxBg'):SetHidden(true)
+        anchor[3]:GetNamedChild('AdvBtn'):SetHidden(true)
+    end
+end
 
 
 --- Draws the set selection panel
@@ -1968,8 +1994,8 @@ function AG.MoveGearSetAll(deposit)
     table.insert(AG.Jobs, {AG.JOB_TYPE_START_BULK_MODE, 0, 0})
 
     local profile = AGD.GetProfile()
-    for setIndex = 1, #profile.gear do
-        AG.MoveGearSet(deposit, setIndex, false)
+    for i = 1, #profile.gear do
+        AG.MoveGearSet(deposit, i, false)
     end
 
     table.insert(AG.Jobs, {AG.JOB_TYPE_STOP_BULK_MODE, 0, 0})
@@ -2364,6 +2390,7 @@ function AG.UpdateUI(from,to)
 
     local profile = AGD.GetProfile()
 
+    local toGear = to
     if not from then from = 1 end
     if not to then to = #profile.builds end
     local text = 'text'
@@ -2374,6 +2401,10 @@ function AG.UpdateUI(from,to)
         WM:GetControlByName('AG_SetSelector_'..x..'KeyBind'):SetText(AG.GetKey('AG_SET_'..x))
         c = WM:GetControlByName('AG_SetSelector_'..x..'Box')
         c:SetText('  '..text)
+    end
+
+    if (not toGear) then toGear = #profile.gear end
+    for x = from, toGear do
         AG.UpdateGearBorder(x)
     end
 
@@ -3839,7 +3870,7 @@ function AG.Tooltip(c, visible, edit)
             if edit then nr = AGD.GetProfile().builds[SELECT].skill[nr] end
             if nr > 0 then
                 local skillAbilityId = AGD.GetProfile().skillbars[nr][slot]
-                if  == 0 then return end
+                if skillAbilityId == 0 then return end
 
                     -- Updated for scribing
                     if IsCraftedAbilitySkill(GetSkillAbilityIndicesFromCraftedAbilityId(skillAbilityId)) then
@@ -4002,13 +4033,13 @@ function AG.LoadProfile(profileId)
     -- Update textures
     for i = 1, #profile.skillbars do
         for slotId = 1, 6 do
-            AG.ShowButton(WM:GetControlByName('AG_Button_Skill_'..setIndex..'_'..slotId))
+            AG.ShowButton(WM:GetControlByName('AG_Button_Skill_'..i..'_'..slotId))
         end
     end
 
     for i = 1, #profile.gear do
         for slotId = 1, #SLOTS do
-            AG.ShowButton(WM:GetControlByName('AG_Button_Gear_'..setIndex..'_'..slotId))
+            AG.ShowButton(WM:GetControlByName('AG_Button_Gear_'..i..'_'..slotId))
         end
     end
 
