@@ -178,7 +178,13 @@
           </Controls>
         </Backdrop>
 
-        <Backdrop name="$(parent)GearPanel" centerColor="282828" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
+        <!-- <Backdrop name="$(parent)GearBackdrop" centerColor="232323" edgeColor="00000000">
+          <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$(parent)ProfilePanel" offsetX="-2" offsetY="33"/>
+          <Dimensions x="770" y="228"/>
+          <Edge edgeSize="1"/>
+        </Backdrop> -->
+
+        <Backdrop name="$(parent)GearPanel" centerColor="00282828" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
           <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$(parent)ProfilePanel" offsetX="0" offsetY="35"/>
           <Dimensions x="766" y="224"/>
           <Edge edgeSize="1"/>
@@ -189,7 +195,13 @@
             </Control>
           </Controls>
         </Backdrop>
-        <Backdrop name="$(parent)SetPanel" centerColor="282828" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
+
+        <!-- <Backdrop name="$(parent)SetBackdrop" centerColor="232323" edgeColor="00000000">
+          <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$(parent)GearPanel" offsetX="-2" offsetY="6"/>
+          <Dimensions x="447" y="508"/>
+        </Backdrop> -->
+
+        <Backdrop name="$(parent)SetPanel" centerColor="00282828" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
           <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$(parent)GearPanel" offsetX="0" offsetY="8"/>
           <Dimensions x="443" y="504"/>
           <Edge edgeSize="1"/>
@@ -408,7 +420,14 @@
             </Control>
           </Controls>
         </Backdrop>
-        <Backdrop name="$(parent)SkillPanel" centerColor="282828" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
+
+        <!-- <Backdrop name="$(parent)SkillBackdrop" centerColor="232323" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
+          <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$(parent)GearPanel" offsetX="-2" offsetY="6"/>
+          <Dimensions x="318" y="508"/>
+          <Edge edgeSize="1"/>
+        </Backdrop> -->
+
+        <Backdrop name="$(parent)SkillPanel" centerColor="00282828" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
           <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$(parent)GearPanel" offsetX="0" offsetY="8"/>
           <Dimensions x="314" y="504"/>
           <Edge edgeSize="1"/>
@@ -602,6 +621,25 @@
       </OnMouseDown>
       <Controls>
         <Label name="$(parent)Label" font="AGFontSmall" color="AAFFFFFF" horizontalAlignment="CENTER" verticalAlignment="CENTER" text="Add New Gear Set">
+          <AnchorFill/>
+        </Label>
+      </Controls>
+    </Button>
+
+    <Button name="AG_CreateBuildBarTemplate" clickSound="Click" virtual="true">
+      <Dimensions y="44"/>
+      <Textures normal="AlphaGear/asset/grey.dds" mouseOver="AlphaGear/asset/light.dds"/>
+      <OnMouseEnter>
+        AG.Tooltip(self, true)
+      </OnMouseEnter>
+      <OnMouseExit>
+        AG.Tooltip(self, false)
+      </OnMouseExit>
+      <OnMouseDown>
+        AG.OnAddNewBuildClicked()
+      </OnMouseDown>
+      <Controls>
+        <Label name="$(parent)Label" font="AGFontSmall" color="AAFFFFFF" horizontalAlignment="CENTER" verticalAlignment="CENTER" text="Add New Build">
           <AnchorFill/>
         </Label>
       </Controls>

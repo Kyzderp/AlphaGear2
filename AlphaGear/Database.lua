@@ -124,7 +124,7 @@ local function MigrateData()
 
                 -- Could be an uninitialized profile from before
                 if (not profileData.setdata) then
-                    AG.trace(string.format("Profile \"%s\" (%s) is uninitialized, not migrating the data.", profileData.name, profileId))
+                    AG.alwaysDbg(string.format("Profile \"%s\" (%s) is uninitialized, not migrating the data.", profileData.name, profileId))
                 else
                     -- Do a first pass to determine what is empty until the end, so we can delete excess
                     -- The old stuff should be contiguous
@@ -158,7 +158,7 @@ local function MigrateData()
                     end
 
                     if (lastNonEmptyBuild == 0 and lastNonEmptyGear == 0 and lastNonEmptySkill == 0) then
-                        AG.trace(string.format("Profile \"%s\" (%s) is empty, not migrating the data.", profileData.name, profileId))
+                        AG.alwaysDbg(string.format("Profile \"%s\" (%s) is empty, not migrating the data.", profileData.name, profileId))
                     else
                         -- Finally can copy everything up until the non-empty ones
                         newData.profiles[profileId] = InitEmptyProfile(profileData.name, profileData.sortKey, profileData.lastset)
@@ -274,9 +274,9 @@ AGD.CreateProfile = CreateProfile
 
 -- If profileId is nil, uses the current profile
 local function DeleteProfile(profileId)
+    local charTable = GetCurrentCharacterTable()
     profileId = profileId or charTable.currentProfileId
 
-    local charTable = GetCurrentCharacterTable()
     if (not charTable.profiles[profileId]) then
         d("|cFF0000Could not delete profile because it doesn't exist: " .. tostring(profileId))
         return

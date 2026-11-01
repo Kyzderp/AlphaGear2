@@ -16,7 +16,7 @@ AG.previousSet = nil
 AG.previousProfile = nil
 AG.accountVariableVersion = 2
 AG.characterVariableVersion = 1
-AG.isDebug = true
+AG.isDebug = false
 
 local agLFCPFilter
 
@@ -200,7 +200,13 @@ local function trace(fmt, ...)
         d(string.format(fmt, ...))
     end
 end
-AG.trace = trace
+
+local function alwaysDbg(fmt, ...)
+    if (agLFCPFilter) then
+        agLFCPFilter:AddMessage(string.format(fmt, ...))
+    end
+end
+AG.alwaysDbg = alwaysDbg
 
 local function IndexOf(tab, item)
     for i, v in ipairs(tab) do
@@ -271,7 +277,7 @@ end
 local function Zero(val) if val == 0 then return nil else return val end end
 
 local function IsNonEmpty(val)
-    return val ~= nil and val ~= 0
+    return val ~= nil and val ~= 0 and val ~= false
 end
 
 --- Hides a control
@@ -649,7 +655,6 @@ function AG.CreateButtonBarPanel(nr, modestr, parent, width)
     local name = 'AG_Selector_'..modestr..'_'..nr
 
     if (WM:GetControlByName(name)) then
-        trace("UI for " .. name .. " already exists")
         return WM:GetControlByName(name), true
     end
 
@@ -686,7 +691,6 @@ local function DrawBuild(nr)
     trace ("DrawBuild")
 
     if (WM:GetControlByName("AG_SetSelector_" .. nr)) then
-        trace("UI for build " .. nr .. " already exists")
         WM:GetControlByName("AG_SetSelector_" .. nr):SetHidden(false)
         return
     end
@@ -878,6 +882,21 @@ local function DrawSkillBarButtons(nr)
     for x = 1, 6 do AG.DrawButton(p,'Button', AG.MODE_SKILL, nr, x, 46+42*(x-1), 0) end
 end
 
+local function DrawCreateBuildButton(parent, numEntries)
+    local control = WM:GetControlByName("AG_CreateBar_Build")
+    if (not control) then
+        control = WM:CreateControlFromVirtual(
+            "AG_CreateBar_Build",
+            parent,
+            "AG_CreateBuildBarTemplate",
+            "")
+        control:SetDimensions(427, 44)
+    end
+
+    local prevControl = WM:GetControlByName("AG_SetSelector_" .. numEntries)
+    control:SetAnchor(TOP, prevControl, BOTTOM, 0, 5)
+end
+
 local function DrawCreateBarButton(mode, parent, width, numEntries)
     local control = WM:GetControlByName("AG_CreateBar_" .. mode)
     if (not control) then
@@ -969,6 +988,8 @@ local function DrawSets()
     for toHide = #profile.builds + 1, maxBuildsCreated do
         WM:GetControlByName("AG_SetSelector_" .. toHide):SetHidden(true)
     end
+    -- Draw create bar button
+    DrawCreateBuildButton(AG_PanelSetPanelScrollChild, #profile.builds)
 
     -- gear-sets
     for x = 1, #profile.gear do
@@ -1394,7 +1415,7 @@ function AG.LoadItem(nr, slotIndex, set)
 
     if (IsNonEmpty(AGD.GetProfile().gear[nr][slotIndex].id)) then
         table.insert(AG.Jobs, {AG.JOB_TYPE_EQUIP_GEAR, AGD.GetProfile().gear[nr][slotIndex], targetSlot})
-    elseif set and AGD.GetProfile().builds[set].lock == 1 then
+    elseif set and IsNonEmpty(AGD.GetProfile().builds[set].lock) then
         -- this will corrupt the cache, if the unequipped item is used in a later slot. Not a real use-case...
         table.insert(AG.Jobs, {AG.JOB_TYPE_UNEQUIP_GEAR, targetSlot})
     end
@@ -1483,7 +1504,7 @@ function AG.GetSkill(abilityId)
     local hasProgression, progressionIndex = GetAbilityProgressionXPInfoFromAbilityId(abilityId)
 
     if not hasProgression then
-        -- trace('Ability with ID %d has no progression.', abilityId)
+        trace('Ability with ID %d has no progression.', abilityId)
         return false
     end
 
@@ -2507,7 +2528,11 @@ function AG.UpdateEditPanel(nr)
 
     -- draws set lock
     c = AG_PanelSetPanelScrollChildEditPanelSetGearPanelGearLockTex
-    if set.lock == 0 then c:SetTexture('AlphaGear/asset/unlocked.dds') else c:SetTexture('AlphaGear/asset/locked.dds') end
+    if IsNonEmpty(set.lock) then
+        c:SetTexture('AlphaGear/asset/locked.dds')
+    else
+        c:SetTexture('AlphaGear/asset/unlocked.dds')
+    end
 
     -- fills text edit for Bars
     AG_PanelSetPanelScrollChildEditPanelSetBar1PanelBar1NameEdit:SetText(Zero(set.text[2]) or L.ActionBar1Text)
@@ -2657,7 +2682,7 @@ function AG.SetupInventoryCallback()
             for profileId, profile in pairs(AGD.GetCharacter().profiles) do
                 for gearIndex, gear in ipairs(profile.gear) do
                     for slotId = 1,16 do
-                        if gear[slotId].id == uid then
+                        if gear[slotId] and gear[slotId].id == uid then
                             -- item is part of at least one gear-set
                             ShowAGMarker(c)
                             return
@@ -2883,12 +2908,12 @@ function AG.SetSetLock()
     if SELECT then
         local set,c = AGD.GetProfile().builds[SELECT]
         c = AG_PanelSetPanelScrollChildEditPanelSetGearPanelGearLockTex
-        if set.lock == 0 then
-            set.lock = 1
-            c:SetTexture('AlphaGear/asset/locked.dds')
-        else
-            set.lock = 0
+        if (IsNonEmpty(set.lock)) then
+            set.lock = nil
             c:SetTexture('AlphaGear/asset/unlocked.dds')
+        else
+            set.lock = true
+            c:SetTexture('AlphaGear/asset/locked.dds')
         end
     end
 end
@@ -3628,7 +3653,7 @@ function AG.UpdateSwapMessage()
         else
             local pslot = {1,3}
 
-            if set.gear ~= 0 and AGD.GetProfile().gear[set.gear][pslot[pair]].id ~= 0 then
+            if IsNonEmpty(set.gear) and IsNonEmpty(AGD.GetProfile().gear[set.gear]) and IsNonEmpty(AGD.GetProfile().gear[set.gear][pslot[pair]].id) then
                 tex = Zero(set.icon[pair]) or AG.GetSetIcon(set.gear,pair)
             else
                 tex = Zero(set.icon[pair]) or 'AlphaGear/asset/nothing.dds'
@@ -3906,29 +3931,29 @@ function AG.Tooltip(c, visible, edit)
             if edit then nr = AGD.GetProfile().builds[SELECT].skill[nr] end
             if IsNonEmpty(nr) then
                 local skillAbilityId = AGD.GetProfile().skillbars[nr][slot]
-                if skillAbilityId == 0 then return end
+                if (not IsNonEmpty(skillAbilityId)) then return end
 
-                    -- Updated for scribing
-                    if IsCraftedAbilitySkill(GetSkillAbilityIndicesFromCraftedAbilityId(skillAbilityId)) then
-                        -- Crafted skill
-                        local abilityId = GetAbilityIdForCraftedAbilityId(skillAbilityId)
-                        trace('Crafted skill: %d - %d', AGD.GetProfile().skillbars[nr][slot], abilityId)
+                -- Updated for scribing
+                if IsCraftedAbilitySkill(GetSkillAbilityIndicesFromCraftedAbilityId(skillAbilityId)) then
+                    -- Crafted skill
+                    local abilityId = GetAbilityIdForCraftedAbilityId(skillAbilityId)
+                    trace('Crafted skill: %d - %d', AGD.GetProfile().skillbars[nr][slot], abilityId)
+                    c.text = SkillTooltip
+                    InitializeTooltip(c.text,AG_Panel,3,0,0,9)
+                    c.text:SetAbilityId(abilityId)
+                else
+                    -- Normal skill
+                    local s1,s2,s3 = AG.GetSkill(skillAbilityId)
+                    if s1 and s2 and s3 then
                         c.text = SkillTooltip
                         InitializeTooltip(c.text,AG_Panel,3,0,0,9)
-                        c.text:SetAbilityId(abilityId)
+                        c.text:SetSkillAbility(s1,s2,s3)
                     else
-                        -- Normal skill
-                        local s1,s2,s3 = AG.GetSkill(skillAbilityId)
-                        if s1 and s2 and s3 then
-                            c.text = SkillTooltip
-                            InitializeTooltip(c.text,AG_Panel,3,0,0,9)
-                            c.text:SetSkillAbility(s1,s2,s3)
-                        else
-                            c.text = InformationTooltip
-                            InitializeTooltip(c.text,AG_Panel,3,0,0,9)
-                            c.text:AddLine(L.ReassignHint)
-                        end
+                        c.text = InformationTooltip
+                        InitializeTooltip(c.text,AG_Panel,3,0,0,9)
+                        c.text:AddLine(L.ReassignHint)
                     end
+                end
 
             else return end
         elseif c.data and c.data.tip then
@@ -4037,6 +4062,31 @@ function AG.CheckSkillId (nr, skillnr)
     end
 end
 
+-- Update a skill bar's textures
+local function UpdateSkillButtons(from, to)
+    local profile = AGD.GetProfile()
+    from = from or 1
+    to = to or #profile.skillbars
+
+    for i = from, to do
+        for slotId = 1, 6 do
+            AG.ShowButton(WM:GetControlByName('AG_Button_Skill_'..i..'_'..slotId))
+        end
+    end
+end
+
+-- Update a gear set's textures
+local function UpdateGearButtons(from, to)
+    local profile = AGD.GetProfile()
+    from = from or 1
+    to = to or #profile.gear
+
+    for i = from, to do
+        for slotId = 1, #SLOTS do
+            AG.ShowButton(WM:GetControlByName('AG_Button_Gear_'..i..'_'..slotId))
+        end
+    end
+end
 
 --- loads profile with Id profileId and updates the UI
 function AG.LoadProfile(profileId)
@@ -4071,17 +4121,8 @@ function AG.LoadProfile(profileId)
     AG.UpdateItemLinks()
 
     -- Update textures
-    for i = 1, #profile.skillbars do
-        for slotId = 1, 6 do
-            AG.ShowButton(WM:GetControlByName('AG_Button_Skill_'..i..'_'..slotId))
-        end
-    end
-
-    for i = 1, #profile.gear do
-        for slotId = 1, #SLOTS do
-            AG.ShowButton(WM:GetControlByName('AG_Button_Gear_'..i..'_'..slotId))
-        end
-    end
+    UpdateSkillButtons()
+    UpdateGearButtons()
 
     if (profileId) then -- don't blab if just refreshing
         d("Loaded profile '" .. profile.name .. "'")
@@ -4212,6 +4253,7 @@ end
 function AG.OnAddNewBuildClicked()
     AGD.CreateBuild()
     DrawSets()
+    AG.UpdateUI(#AGD.GetProfile().builds)
 end
 
 function AG.OnDeleteBuildClicked() -- TODO: index? gonna be in dropdown?
@@ -4224,6 +4266,7 @@ end
 function AG.OnAddNewGearClicked()
     AGD.CreateGear()
     DrawSets()
+    UpdateGearButtons(#AGD.GetProfile().gear)
 end
 
 function AG.OnDeleteGearClicked() -- TODO: index?
@@ -4236,6 +4279,7 @@ end
 function AG.OnAddNewSkillbarClicked()
     AGD.CreateSkillbar()
     DrawSets()
+    UpdateSkillButtons(#AGD.GetProfile().skillbars)
 end
 
 function AG.OnDeleteSkillbarClicked() -- TODO: index?
