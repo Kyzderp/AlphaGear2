@@ -3234,7 +3234,9 @@ end
 function AG.AlignMainPanel(parent, xOffset)
     trace('AlignMainPanel')
     AG_Panel:ClearAnchors()
-    AG_Panel:SetAnchor(RIGHT, parent, LEFT, xOffset, 0)
+    -- AG_Panel:SetAnchor(RIGHT, parent, LEFT, xOffset, 0) -- unintended behavior starting in U51: dragging a toplevel anchored to non-GuiRoot makes it offset all weird
+    local x, y = ZO_GetControlPointOffsetFromGuiRoot(parent, LEFT)
+    AG_Panel:SetAnchor(RIGHT, GuiRoot, LEFT, x + xOffset, y)
 end
 
 --- Resets the position of the main panel to it's previous state
