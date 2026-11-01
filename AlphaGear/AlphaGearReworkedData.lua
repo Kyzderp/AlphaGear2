@@ -1102,7 +1102,9 @@ function AG.SetupMainPanel()
     AG_PanelUndressArmor.data = { info = L.Unequip }
     AG_PanelUndressAll.data = { info = L.UnequipAll }
     AG_PanelProfilePanelEditProfileButton.data = { info = "Edit profile properties" }
+    AG_PanelProfilePanelDeleteProfileButton.data = { info = "Delete the current profile" }
     AG_PanelProfilePanelImportProfileButton.data = { info = "Import another profile" }
+    AG_PanelProfilePanelAddProfileButton.data = { info = "Create a new profile" }
     AG_PanelSetPanelScrollChildEditPanelSetGearPanelGearLock.data = { info = L.Lock }
 
     AG.SetupProfileCombo()
@@ -1819,9 +1821,15 @@ end
 function AG.LoadSet(nr)
     if not nr then return end
 
+    local profile = AGD.GetProfile()
+    if (not profile.builds[nr]) then
+        d("You do not have a build " .. tostring(nr) .. " to equip.")
+        return
+    end
+
     if IsUnitInCombat("player") then
         AG.pendingSet = nr
-        d(ZOSF(L.SetChangeQueuedMsg, nr, AGD.GetProfile().builds[nr].text[1]))
+        d(ZOSF(L.SetChangeQueuedMsg, nr, profile.builds[nr].text[1]))
     else
         AG.LoadSetInternal(nr)
     end

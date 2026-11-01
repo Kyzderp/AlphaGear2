@@ -52,6 +52,14 @@ AGD.IsProfileEmpty = IsProfileEmpty
 ---------------------------------------------------------------------
 -- Migration
 ---------------------------------------------------------------------
+-- Adds 1 build, 1 gear, and 2 skillbars to a profile
+local function PopulateNewProfile(profileId)
+    AGD.CreateBuild(profileId)
+    AGD.CreateGear(profileId)
+    AGD.CreateSkillbar(profileId)
+    AGD.CreateSkillbar(profileId)
+end
+
 local function InitEmptyBuild(index)
     return {
         text = {"Build " .. index},
@@ -194,6 +202,8 @@ local function MigrateData()
             accTable[charId] = InitEmptyCharacter(name)
             local newCharTable = accTable[charId]
             newCharTable.profiles[1] = InitEmptyProfile(1)
+            newCharTable.currentProfileId = 1
+            PopulateNewProfile(1)
         end
     end
 end
@@ -268,6 +278,7 @@ local function CreateProfile(profileId)
 
     local charTable = GetCurrentCharacterTable()
     charTable.profiles[profileId] = InitEmptyProfile("Profile " .. profileId)
+    PopulateNewProfile(profileId)
     return profileId
 end
 AGD.CreateProfile = CreateProfile
@@ -286,8 +297,8 @@ end
 AGD.DeleteProfile = DeleteProfile
 
 -- Initializes values in new build. Builds are always contiguous
-local function CreateBuild()
-    local profileTable = GetProfileTable()
+local function CreateBuild(profileId)
+    local profileTable = GetProfileTable(profileId)
     table.insert(profileTable.builds, InitEmptyBuild(#profileTable.builds + 1))
 end
 AGD.CreateBuild = CreateBuild
@@ -301,8 +312,8 @@ end
 AGD.DeleteBuild = DeleteBuild
 
 -- Initializes values in new gear set. Gear is always contiguous
-local function CreateGear()
-    local profileTable = GetProfileTable()
+local function CreateGear(profileId)
+    local profileTable = GetProfileTable(profileId)
     table.insert(profileTable.gear, {
         -- TODO: do 1~16 need to be inited or is nil ok?
     })
@@ -330,8 +341,8 @@ end
 AGD.DeleteGear = DeleteGear
 
 -- Initializes values in new skillbar. Skillbars are always contiguous
-local function CreateSkillbar()
-    local profileTable = GetProfileTable()
+local function CreateSkillbar(profileId)
+    local profileTable = GetProfileTable(profileId)
     table.insert(profileTable.skillbars, {
         -- TODO: do 1~6 need to be inited or is nil ok?
     })

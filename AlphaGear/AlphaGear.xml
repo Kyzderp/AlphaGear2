@@ -158,21 +158,38 @@
                 <OnClicked>AG.ShowEditProfileDialog()</OnClicked>
                 <OnMouseEnter>AG.Tooltip(self,true)</OnMouseEnter>
                 <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
-            </Button>           
+            </Button>
+
+            <Button name="$(parent)DeleteProfileButton" clickSound="Click">
+                <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)EditProfileButton" offsetX="2" />
+                <Dimensions y="35" x="35"/>
+                <Textures normal="/esoui/art/inventory/inventory_tabicon_trash_up.dds" pressed="/esoui/art/inventory/inventory_tabicon_trash_down.dds" mouseOver="/esoui/art/inventory/inventory_tabicon_trash_over.dds"/>
+                <OnClicked></OnClicked>
+                <OnMouseEnter>AG.Tooltip(self,true)</OnMouseEnter>
+                <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
+            </Button>
 
             <Button name="$(parent)ImportProfileButton" clickSound="Click">
-                <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)EditProfileButton" offsetX="2" />
+                <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)DeleteProfileButton" offsetX="2" />
                 <Dimensions y="35" x="35"/>
                 <Textures normal="esoui/art/buttons/edit_save_up.dds" pressed="esoui/art/buttons/edit_save_down.dds" mouseOver="esoui/art/buttons/edit_save_over.dds"/>
                 <OnClicked>AG.ShowImportDialog()</OnClicked>
                 <OnMouseEnter>AG.Tooltip(self,true)</OnMouseEnter>
                 <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
-            </Button>           
-            
+            </Button>
+
+            <Button name="$(parent)AddProfileButton" clickSound="Click">
+                <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)ImportProfileButton" offsetX="2" />
+                <Dimensions y="35" x="35"/>
+                <Textures normal="esoui/art/progression/addpoints_up.dds" pressed="esoui/art/progression/addpoints_down.dds" mouseOver="esoui/art/progression/addpoints_over.dds"/>
+                <OnClicked>AG.OnAddNewProfileClicked()</OnClicked>
+                <OnMouseEnter>AG.Tooltip(self,true)</OnMouseEnter>
+                <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
+            </Button>
             
             <Control name="$(parent)ProfileSelect" inherits="ZO_ComboBox">
                 <Anchor point="LEFT" relativePoint="RIGHT" offsetX="10" relativeTo="$(parent)Name" />
-                <Anchor point="RIGHT" relativePoint="LEFT" offsetX="-10" relativeTo="$(parent)ImportProfileButton" />
+                <Anchor point="RIGHT" relativePoint="LEFT" offsetX="-6" relativeTo="$(parent)AddProfileButton" />
             </Control>
             
           </Controls>
