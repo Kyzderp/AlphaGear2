@@ -569,6 +569,44 @@
       </Controls>
     </Control>
 
+    <Button name="AG_CreateSkillBarTemplate" clickSound="Click" virtual="true">
+      <Dimensions y="44"/>
+      <Textures normal="AlphaGear/asset/grey.dds" mouseOver="AlphaGear/asset/light.dds"/>
+      <OnMouseEnter>
+        AG.Tooltip(self, true)
+      </OnMouseEnter>
+      <OnMouseExit>
+        AG.Tooltip(self, false)
+      </OnMouseExit>
+      <OnMouseDown>
+        AG.OnAddNewSkillbarClicked()
+      </OnMouseDown>
+      <Controls>
+        <Label name="$(parent)Label" font="AGFontSmall" color="AAFFFFFF" horizontalAlignment="CENTER" verticalAlignment="CENTER" text="Add New Skillbar">
+          <AnchorFill/>
+        </Label>
+      </Controls>
+    </Button>
+
+    <Button name="AG_CreateGearBarTemplate" clickSound="Click" virtual="true">
+      <Dimensions y="44"/>
+      <Textures normal="AlphaGear/asset/grey.dds" mouseOver="AlphaGear/asset/light.dds"/>
+      <OnMouseEnter>
+        AG.Tooltip(self, true)
+      </OnMouseEnter>
+      <OnMouseExit>
+        AG.Tooltip(self, false)
+      </OnMouseExit>
+      <OnMouseDown>
+        AG.OnAddNewGearClicked()
+      </OnMouseDown>
+      <Controls>
+        <Label name="$(parent)Label" font="AGFontSmall" color="AAFFFFFF" horizontalAlignment="CENTER" verticalAlignment="CENTER" text="Add New Gear Set">
+          <AnchorFill/>
+        </Label>
+      </Controls>
+    </Button>
+
     <TopLevelControl name="AG_SetTip" hidden="true">
       <Anchor point="6" relativePoint="3" relativeTo="AG_Charge1"/>
       <Dimensions x="350" y="188"/>

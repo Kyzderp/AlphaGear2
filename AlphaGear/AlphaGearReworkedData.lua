@@ -878,6 +878,20 @@ local function DrawSkillBarButtons(nr)
     for x = 1, 6 do AG.DrawButton(p,'Button', AG.MODE_SKILL, nr, x, 46+42*(x-1), 0) end
 end
 
+local function DrawCreateBarButton(mode, parent, width, numEntries)
+    local control = WM:GetControlByName("AG_CreateBar_" .. mode)
+    if (not control) then
+        control = WM:CreateControlFromVirtual(
+            "AG_CreateBar_" .. mode,
+            parent,
+            "AG_Create" .. mode .. "BarTemplate",
+            "")
+        control:SetDimensions(width, 44)
+    end
+
+    control:SetAnchor(TOPLEFT, parent, TOPLEFT, 0, 45 * numEntries)
+end
+
 local maxGearCreated = 0
 local function DrawGearBarButtons(nr)
     local p, exists = AG.CreateButtonBarPanel(nr, AG.MODE_GEAR, AG_PanelGearPanelScrollChild, 751)
@@ -963,6 +977,8 @@ local function DrawSets()
     for toHide = #profile.gear + 1, maxGearCreated do
         WM:GetControlByName("AG_Selector_Gear_" .. toHide):SetHidden(true)
     end
+    -- Draw create bar button
+    DrawCreateBarButton(AG.MODE_GEAR, AG_PanelGearPanelScrollChild, 751, #profile.gear)
 
     -- skill-sets
     for x = 1, #profile.skillbars do
@@ -971,6 +987,8 @@ local function DrawSets()
     for toHide = #profile.skillbars + 1, maxSkillbarsCreated do
         WM:GetControlByName("AG_Selector_Skill_" .. toHide):SetHidden(true)
     end
+    -- Draw create bar button
+    DrawCreateBarButton(AG.MODE_SKILL, AG_PanelSkillPanelScrollChild, 299, #profile.skillbars)
 end
 
 function AG.SetupMainPanel()
@@ -2671,7 +2689,10 @@ end
 function AG.GetItemLocation(nr, slotIndex)
     if not nr or not slotIndex then return -2 end
 
-    local id = AGD.GetProfile().gear[nr][slotIndex].id
+    local gearItem = AGD.GetProfile().gear[nr][slotIndex]
+    if (not gearItem) then return -2 end
+
+    local id = gearItem.id
     if not id or id == 0 then return -2 end
 
     local function isWornInSlot (index)
@@ -3431,7 +3452,7 @@ function AG.ShowButton(c)
             c.data = nil
         end
     else
-        if gear[slot].link and gear[slot].link ~= 0 then
+        if gear[slot] and gear[slot].link and gear[slot].link ~= 0 then
             c:SetNormalTexture(GetItemLinkInfo(gear[slot].link))
             c:GetNamedChild('Bg'):SetCenterColor(Quality(gear[slot].link,0.5))
             c.data = { hint = L.Button[type] }
@@ -3872,11 +3893,12 @@ function AG.Tooltip(c, visible, edit)
         if type == AG.MODE_GEAR then
             if edit then nr = AGD.GetProfile().builds[SELECT].gear end
             if IsNonEmpty(nr) then
-                if AGD.GetProfile().gear[nr][slot].link == 0 then return end
+                local gearItem = AGD.GetProfile().gear[nr][slot]
+                if (not gearItem or not IsNonEmpty(gearItem.link)) then return end
 
                 c.text = ItemTooltip
                 InitializeTooltip(c.text,AG_Panel,3,0,0,9)
-                c.text:SetLink(AGD.GetProfile().gear[nr][slot].link)
+                c.text:SetLink(gearItem.link)
                 ZO_ItemTooltip_ClearCondition(c.text)
                 ZO_ItemTooltip_ClearCharges(c.text)
             else return end
@@ -4211,7 +4233,7 @@ function AG.OnDeleteGearClicked() -- TODO: index?
     DrawSets()
 end
 
-function AG.OnNewSkillbarClicked()
+function AG.OnAddNewSkillbarClicked()
     AGD.CreateSkillbar()
     DrawSets()
 end
