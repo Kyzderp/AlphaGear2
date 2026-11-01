@@ -43,6 +43,7 @@ dialogs/AG_IntegrationsDialog.xml
 dialogs/AG_IntegrationsDialog.lua
 dialogs/AG_ImportDialog.xml
 dialogs/AG_ImportDialog.lua
+dialogs/AG_ConfirmDialog.lua
 
 
 AlphaGear.xml

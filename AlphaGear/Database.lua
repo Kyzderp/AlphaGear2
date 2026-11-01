@@ -331,7 +331,7 @@ local function DeleteGear(index)
     for _, buildData in pairs(profileTable.builds) do
         if (buildData.gear == index) then
             buildData.gear = nil -- TODO: is nil ok?
-        elseif (buildData.gear > index) then
+        elseif (buildData.gear and buildData.gear > index) then
             buildData.gear = buildData.gear - 1
         end
     end
@@ -360,12 +360,12 @@ local function DeleteSkillbar(index)
     for _, buildData in pairs(profileTable.builds) do
         if (buildData.skill[1] == index) then
             buildData.skill[1] = nil -- TODO: is nil ok?
-        elseif (buildData.skill[1] > index) then
+        elseif (buildData.skill[1] and buildData.skill[1] > index) then
             buildData.skill[1] = buildData.skill[1] - 1
         end
         if (buildData.skill[2] == index) then
             buildData.skill[2] = nil -- TODO: is nil ok?
-        elseif (buildData.skill[2] > index) then
+        elseif (buildData.skill[2] and buildData.skill[2] > index) then
             buildData.skill[2] = buildData.skill[2] - 1
         end
     end

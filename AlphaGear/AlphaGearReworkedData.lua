@@ -416,6 +416,9 @@ function AG.DrawMenu(c, line)
             h = h + 30
             c1:SetHeight(30)
             c1:SetHidden(false)
+            if (type(x) == "string") then
+                c1:SetText(x)
+            end
         else
             c1:SetHeight(0)
             c1:SetHidden(true)
@@ -854,8 +857,16 @@ local function DrawSkillBarButtons(nr)
     p:SetHandler('OnMouseDown',
         function(self,button,ctrl,alt,shift)
             if button == 2 then
-                AG.DrawMenu(self, {true, (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_SKILLS),
-                        true, true, false, false})
+                AG.DrawMenu(self, {
+                    true,
+                    (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_SKILLS),
+                    true,
+                    true,
+                    false,
+                    false,
+                    false,
+                    false,
+                    "Delete skillbar"})
                 MENU.nr = nr
                 MENU.type = AG.MENU_TYPE_SKILLS
             elseif shift then
@@ -929,7 +940,7 @@ local function DrawGearBarButtons(nr)
                 -- open context menu
                 local isBanking = IMGR:IsBanking()
 
-                AG.DrawMenu(self, {true, (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_GEAR), true, true, isBanking, isBanking, isBanking, isBanking})
+                AG.DrawMenu(self, {true, (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_GEAR), true, true, isBanking, isBanking, isBanking, isBanking, "Delete gear set"})
                 MENU.nr = nr
                 MENU.type = AG.MENU_TYPE_GEAR
             elseif shift then
@@ -3733,7 +3744,7 @@ end
 
 -- Executes a menu action
 -- nr: number of action to execute
--- 1: copy, 2: paste, 3: insert equipped, 4: clear, 5: deposit, 6: withdraw, 7: deposit profile, 8: withdraw profile
+-- 1: copy, 2: paste, 3: insert equipped, 4: clear, 5: deposit, 6: withdraw, 7: deposit profile, 8: withdraw profile, 9: delete bar
 function AG.MenuAction(nr)
     trace('MenuAction')
 
@@ -3815,6 +3826,13 @@ function AG.MenuAction(nr)
         if MENU.type == AG.MENU_TYPE_GEAR then
             AG.MoveGearSetAll(false)
         end
+    elseif nr == 9 then
+        -- Delete set
+        if MENU.type == AG.MENU_TYPE_GEAR then
+            AG.OnDeleteGearClicked(MENU.nr)
+        elseif (MENU.type == AG.MENU_TYPE_SKILLS) then
+            AG.OnDeleteSkillbarClicked(MENU.nr)
+        end
     end
 end
 
@@ -3834,7 +3852,7 @@ local function GetCharNames()
 end
 
 local function ImportProfile(accountName, charId, profileId)
-    local otherProfile = AGD.GetAccountTable()[charId].profiles[profileId]
+    local otherProfile = AGD.GetAccountTable()[charId].profiles[profileId] -- TODO: what if other account isn't migrated?
     local currentProfile = AGD.GetProfile()
     d(zo_strformat("Importing profile <<1>> (<<2>>) from <<3>> <<4>>...", otherProfile.name, profileIds, accountName, charId))
 
@@ -3844,6 +3862,7 @@ local function ImportProfile(accountName, charId, profileId)
 
     ZO_ClearTable(currentProfile)
     ZO_DeepTableCopy(otherProfile, currentProfile)
+    currentProfile.name = "Copy of " .. currentProfile.name
 
     for index = 1, #currentProfile.gear do
         AG.handlePostChangeGearSetItems(index)
@@ -3851,6 +3870,8 @@ local function ImportProfile(accountName, charId, profileId)
 
     DrawSets()
     AG.UpdateUI()
+    UpdateGearButtons()
+    UpdateSkillButtons()
     d("Done")
 end
 AG.ImportProfile = ImportProfile
@@ -3937,7 +3958,7 @@ function AG.Tooltip(c, visible, edit)
             else return end
         elseif type == AG.MODE_SKILL then
             if edit then nr = AGD.GetProfile().builds[SELECT].skill[nr] end
-            if IsNonEmpty(nr) then
+            if (IsNonEmpty(nr) and AGD.GetProfile().skillbars[nr]) then
                 local skillAbilityId = AGD.GetProfile().skillbars[nr][slot]
                 if (not IsNonEmpty(skillAbilityId)) then return end
 
@@ -4243,19 +4264,16 @@ function AG.OnAddNewProfileClicked()
     AG.LoadProfile(profileId)
 end
 
-local function OnDeleteProfileConfirmed()
-    AGD.DeleteProfile()
-    AG.LoadProfile(GetSortedProfileIds()[1])
-end
-
 function AG.OnDeleteProfileClicked()
-    -- TODO: do not allow deleting last profile
-    -- TODO: confirmation dialog
     if (AGD.GetNumProfiles() == 1) then
         d("You cannot delete the last remaining profile; create another profile first.")
         return
     end
-    OnDeleteProfileConfirmed()
+
+    AGConfirmDlg.Show("profile " .. tostring(AGD.GetProfile().name), function()
+        AGD.DeleteProfile()
+        AG.LoadProfile(GetSortedProfileIds()[1])
+    end)
 end
 
 function AG.OnAddNewBuildClicked()
@@ -4264,11 +4282,12 @@ function AG.OnAddNewBuildClicked()
     AG.UpdateUI(#AGD.GetProfile().builds)
 end
 
-function AG.OnDeleteBuildClicked() -- TODO: index? gonna be in dropdown?
-    -- TODO: confirmation dialog?
-    local removedName = AGD.DeleteBuild()
-    d("Removed build \"" .. tostring(removedName) .. "\"")
-    DrawSets()
+function AG.OnDeleteBuildClicked(index)
+    local name = tostring(AGD.GetProfile().builds[index].text[1])
+    AGConfirmDlg.Show(name, function()
+        d("Removed build \"" .. name .. "\"")
+        DrawSets()
+    end)
 end
 
 function AG.OnAddNewGearClicked()
@@ -4277,11 +4296,13 @@ function AG.OnAddNewGearClicked()
     UpdateGearButtons(#AGD.GetProfile().gear)
 end
 
-function AG.OnDeleteGearClicked() -- TODO: index?
-    -- TODO: confirmation?
-    local removedIndex = AGD.DeleteGear()
-    d(zo_strformat("Removed gear set <<1>>", removedIndex))
-    DrawSets()
+function AG.OnDeleteGearClicked(index)
+    AGConfirmDlg.Show("gear set " .. index, function()
+        AGD.DeleteGear(index)
+        d(zo_strformat("Removed gear set <<1>>", index))
+        DrawSets()
+        UpdateGearButtons(index)
+    end)
 end
 
 function AG.OnAddNewSkillbarClicked()
@@ -4290,11 +4311,13 @@ function AG.OnAddNewSkillbarClicked()
     UpdateSkillButtons(#AGD.GetProfile().skillbars)
 end
 
-function AG.OnDeleteSkillbarClicked() -- TODO: index?
-    -- TODO: confirmation?
-    local removedIndex = AGD.DeleteSkillbar()
-    d(zo_strformat("Removed skill bar <<1>>", removedIndex))
-    DrawSets()
+function AG.OnDeleteSkillbarClicked(index)
+    AGConfirmDlg.Show("skillbar " .. index, function()
+        local removedIndex = AGD.DeleteSkillbar(index)
+        d(zo_strformat("Removed skillbar <<1>>", removedIndex))
+        DrawSets()
+        UpdateSkillButtons(index)
+    end)
 end
 
 
@@ -4399,6 +4422,7 @@ function AG:Initialize()
 
     AG.InitEditProfileDialog()
     AGImportDlg.Initialize()
+    AGConfirmDlg.Initialize()
 
     zo_callLater(AG.SwapMessage,900)
     -- AG_PanelOptionPanelPlus:SetAnchor(8,AG_Option_2,8,0,0)
