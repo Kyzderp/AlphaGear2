@@ -62,7 +62,7 @@ end
 
 local function InitEmptyBuild(index)
     return {
-        text = {"Build " .. index},
+        text = {},
         icon = {},
         skill = {},
         outfit = -1,

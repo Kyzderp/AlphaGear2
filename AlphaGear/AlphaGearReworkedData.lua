@@ -748,6 +748,7 @@ local function DrawBuild(nr)
                     anchor[3]:GetNamedChild('Edit'):SetHidden(true)
                     anchor[3]:GetNamedChild('BoxBg'):SetHidden(true)
                     anchor[3]:GetNamedChild('AdvBtn'):SetHidden(true)
+                    anchor[3]:GetNamedChild('DeleteBtn'):SetHidden(true)
                 end
 
                 -- open editpanel on this build
@@ -758,6 +759,11 @@ local function DrawBuild(nr)
                 WM:GetControlByName('AG_SetSelector_'..nr..'Edit'):ToggleHidden()
                 WM:GetControlByName('AG_SetSelector_'..nr..'BoxBg'):ToggleHidden()
                 WM:GetControlByName('AG_SetSelector_'..nr..'AdvBtn'):ToggleHidden()
+                if (#AGD.GetProfile().builds == 1) then
+                    WM:GetControlByName('AG_SetSelector_'..nr..'DeleteBtn'):SetHidden(true)
+                else
+                    WM:GetControlByName('AG_SetSelector_'..nr..'DeleteBtn'):ToggleHidden()
+                end
                 AG.UpdateEditPanel(self.setnr)
                 AG_PanelIcons:SetHidden(true)
                 SELECT = nr
@@ -802,7 +808,7 @@ local function DrawBuild(nr)
     p = WM:CreateControlFromVirtual('AG_SetSelector_'..nr..'Edit', s, 'ZO_DefaultEditForBackdrop')
     p:ClearAnchors()
     p:SetAnchor(LEFT,l,LEFT,8,4)
-    p:SetDimensions(panelWidth-94, 30)
+    p:SetDimensions(panelWidth-94-41, 30)
     p:SetFont('AGFont')
     p:SetColor(1,1,1,1)
     p:SetMaxInputChars(100)
@@ -820,15 +826,23 @@ local function DrawBuild(nr)
     p = WM:CreateControl('AG_SetSelector_'..nr..'BoxBg', s, CT_BACKDROP)
     p:SetDrawTier(1)
     p:SetAnchor(LEFT,l,LEFT,0,0)
-    p:SetDimensions(panelWidth-80, 30)
+    p:SetDimensions(panelWidth-80-41, 30)
     p:SetCenterColor(0,0,0,0.2)
     p:SetEdgeColor(0,0,0,0)
     p:SetEdgeTexture('',1,1,2)
     p:SetHidden(true)
 
+    -- Delete build button
+    local deleteBtn = WM:CreateControlFromVirtual(
+        "AG_SetSelector_" .. nr .. "DeleteBtn",
+        s,
+        "AG_DeleteBuildButton_Template")
+    deleteBtn.buildIndex = nr
+    deleteBtn:SetAnchor(LEFT, p, RIGHT, 4)
+
     -- crate advanced options button
     local btnAO = WM:CreateControl('AG_SetSelector_'..nr..'AdvBtn', s, CT_BUTTON)
-    btnAO:SetAnchor(LEFT, p, RIGHT, 4, 0)
+    btnAO:SetAnchor(LEFT, deleteBtn, RIGHT, 4, 0)
     btnAO:SetDimensions(35, 35)
     btnAO:SetNormalTexture('esoui/art/buttons/edit_up.dds')
     btnAO:SetMouseOverTexture('esoui/art/buttons/edit_over.dds')
@@ -839,7 +853,6 @@ local function DrawBuild(nr)
     btnAO:SetHandler('OnMouseEnter',function(self) AG.Tooltip(self,true) end)
     btnAO:SetHandler('OnMouseExit',function(self) AG.Tooltip(self,false) end)
     btnAO:SetHandler('OnClicked',function(self) AG.ShowAdvancedOptionsDialog() end)
-
 end
 
 local maxSkillbarsCreated = 0
@@ -899,7 +912,7 @@ local function DrawCreateBuildButton(parent, numEntries)
         control = WM:CreateControlFromVirtual(
             "AG_CreateBar_Build",
             parent,
-            "AG_CreateBuildBarTemplate",
+            "AG_CreateBuildBar_Template",
             "")
         control:SetDimensions(427, 44)
     end
@@ -914,7 +927,7 @@ local function DrawCreateBarButton(mode, parent, width, numEntries)
         control = WM:CreateControlFromVirtual(
             "AG_CreateBar_" .. mode,
             parent,
-            "AG_Create" .. mode .. "BarTemplate",
+            "AG_Create" .. mode .. "Bar_Template",
             "")
         control:SetDimensions(width, 44)
     end
@@ -1136,6 +1149,7 @@ function AG.HideEditPanel()
         anchor[3]:GetNamedChild('Edit'):SetHidden(true)
         anchor[3]:GetNamedChild('BoxBg'):SetHidden(true)
         anchor[3]:GetNamedChild('AdvBtn'):SetHidden(true)
+        anchor[3]:GetNamedChild("DeleteBtn"):SetHidden(true)
     end
 end
 
@@ -2460,7 +2474,7 @@ function AG.UpdateUI(from,to)
     to = math.min(to, #profile.builds)
     local text = 'text'
     for x = from, to do
-        if profile.builds[x].text[1] == 0 then text = 'Build '..x else text = profile.builds[x].text[1] end
+        if not IsNonEmpty(profile.builds[x].text[1]) then text = 'Build '..x else text = profile.builds[x].text[1] end
         local header, c = '|cFFAA33'..text..'|r', ''
         WM:GetControlByName('AG_SetSelector_'..x).data = { header = header, info = L.Set }
         WM:GetControlByName('AG_SetSelector_'..x..'KeyBind'):SetText(AG.GetKey('AG_SET_'..x))
@@ -2478,7 +2492,18 @@ function AG.UpdateUI(from,to)
 end
 
 function AG.UpdateEditPanel(nr)
-    if not nr then return end
+    -- If number not specified, update the currently open one
+    if not nr then
+        -- I guess this is how AG has been finding which one is open all this time
+        local ctrlEP = AG_PanelSetPanelScrollChildEditPanel
+        local anchor = {ctrlEP:GetAnchor()}
+        if (ctrlEP:IsHidden() or not anchor[3]) then
+            return
+        end
+        nr = tonumber(string.match(anchor[3]:GetName(), "AG_SetSelector_(%d+)"))
+        alwaysDbg("UpdateEditPanel called without nr, setting it to " .. nr)
+    end
+
     local val, set, c, _ = nil, AGD.GetProfile().builds[nr]
 
     -- Draws two rows of skill buttons in selected set
@@ -2519,7 +2544,12 @@ function AG.UpdateEditPanel(nr)
     AG_PanelSetPanelScrollChildEditPanelSetBar2PanelBar2IconTex:SetTexture(val)
 
     -- builds set label for tooltip
-    if AGD.GetProfile().builds[nr].text[1] == 0 then val = '|cFFAA33Set '..nr..'|r' else val = '|cFFAA33'..AGD.GetProfile().builds[nr].text[1]..'|r' end
+    local buildText = AGD.GetProfile().builds[nr].text[1]
+    if IsNonEmpty(buildText) then
+        val = '|cFFAA33'..buildText..'|r'
+    else
+        val = '|cFFAA33Set '..nr..'|r'
+    end
 
     -- draws gear connector
     c = AG_PanelSetPanelScrollChildEditPanelSetGearPanelGearConnector
@@ -4279,14 +4309,28 @@ end
 function AG.OnAddNewBuildClicked()
     AGD.CreateBuild()
     DrawSets()
+    AG.HideEditPanel()
     AG.UpdateUI(#AGD.GetProfile().builds)
 end
 
 function AG.OnDeleteBuildClicked(index)
-    local name = tostring(AGD.GetProfile().builds[index].text[1])
+    local builds = AGD.GetProfile().builds
+    if (#builds == 1) then
+        d("You cannot delete the last remaining build; create another build first.")
+        return
+    end
+
+    local name = builds[index].text[1]
+    if (not IsNonEmpty(name)) then
+        name = "Build " .. index
+    end
+
     AGConfirmDlg.Show(name, function()
+        AGD.DeleteBuild(index)
         d("Removed build \"" .. name .. "\"")
         DrawSets()
+        AG.HideEditPanel()
+        AG.UpdateUI(index)
     end)
 end
 
@@ -4297,11 +4341,17 @@ function AG.OnAddNewGearClicked()
 end
 
 function AG.OnDeleteGearClicked(index)
+    if (#AGD.GetProfile().gear == 1) then
+        d("You cannot delete the last remaining gear set; create another gear set first.")
+        return
+    end
+
     AGConfirmDlg.Show("gear set " .. index, function()
         AGD.DeleteGear(index)
         d(zo_strformat("Removed gear set <<1>>", index))
         DrawSets()
         UpdateGearButtons(index)
+        AG.UpdateEditPanel() -- TODO
     end)
 end
 
@@ -4312,11 +4362,17 @@ function AG.OnAddNewSkillbarClicked()
 end
 
 function AG.OnDeleteSkillbarClicked(index)
+    if (#AGD.GetProfile().skillbars == 1) then
+        d("You cannot delete the last remaining skillbar; create another skillbar first.")
+        return
+    end
+
     AGConfirmDlg.Show("skillbar " .. index, function()
         local removedIndex = AGD.DeleteSkillbar(index)
         d(zo_strformat("Removed skillbar <<1>>", removedIndex))
         DrawSets()
         UpdateSkillButtons(index)
+        AG.UpdateEditPanel() -- TODO
     end)
 end
 

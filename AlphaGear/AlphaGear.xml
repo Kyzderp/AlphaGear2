@@ -612,7 +612,7 @@
       </Controls>
     </Control>
 
-    <Button name="AG_CreateSkillBarTemplate" clickSound="Click" virtual="true">
+    <Button name="AG_CreateSkillBar_Template" clickSound="Click" virtual="true">
       <Dimensions y="44"/>
       <Textures normal="AlphaGear/asset/grey.dds" mouseOver="AlphaGear/asset/light.dds"/>
       <OnMouseEnter>
@@ -631,7 +631,7 @@
       </Controls>
     </Button>
 
-    <Button name="AG_CreateGearBarTemplate" clickSound="Click" virtual="true">
+    <Button name="AG_CreateGearBar_Template" clickSound="Click" virtual="true">
       <Dimensions y="44"/>
       <Textures normal="AlphaGear/asset/grey.dds" mouseOver="AlphaGear/asset/light.dds"/>
       <OnMouseEnter>
@@ -650,7 +650,21 @@
       </Controls>
     </Button>
 
-    <Button name="AG_CreateBuildBarTemplate" clickSound="Click" virtual="true">
+    <Button name="AG_DeleteBuildButton_Template" clickSound="Click" hidden="true" virtual="true">
+      <Dimensions x="35" y="35"/>
+      <Textures normal="esoui/art/inventory/inventory_tabicon_trash_up.dds" pressed="esoui/art/inventory/inventory_tabicon_trash_down.dds" mouseOver="esoui/art/inventory/inventory_tabicon_trash_over.dds"/>
+      <OnMouseEnter>
+        AG.Tooltip(self, true)
+      </OnMouseEnter>
+      <OnMouseExit>
+        AG.Tooltip(self, false)
+      </OnMouseExit>
+      <OnMouseDown>
+        AG.OnDeleteBuildClicked(self.buildIndex)
+      </OnMouseDown>
+    </Button>
+
+    <Button name="AG_CreateBuildBar_Template" clickSound="Click" virtual="true">
       <Dimensions y="44"/>
       <Textures normal="AlphaGear/asset/grey.dds" mouseOver="AlphaGear/asset/light.dds"/>
       <OnMouseEnter>
