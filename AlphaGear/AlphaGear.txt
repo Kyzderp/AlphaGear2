@@ -13,7 +13,7 @@
 ## Author: mesota, Kyzeragon
 ## Description: Anything you need to manage your builds. Configurable profiles, builds, skill and gear sets, auto repair and auto weapon charge, deposit and withdraw function. Originally by AlphaLemming.
 ## DependsOn: LibAddonMenu-2.0>=43
-## OptionalDependsOn: LibZone FCOItemSaver ChampionPointsSlots CSPS AutoCategory DynamicCP LibRadialMenu LibFilteredChatPanel
+## OptionalDependsOn: LibZone FCOItemSaver ChampionPointsSlots AutoCategory DynamicCP LibRadialMenu LibFilteredChatPanel
 ## IsLibrary: false
 
 lang/en.lua
@@ -29,8 +29,6 @@ plugins/FCOIS/ag_fcois.lua
 plugins/AlphaStyle/ag_as.lua
 
 plugins/CPSlots/ag_cpslots.lua
-
-plugins/CSPS/ag_csps.lua
 
 plugins/DynamicCP/ag_dynamiccp.lua
 
