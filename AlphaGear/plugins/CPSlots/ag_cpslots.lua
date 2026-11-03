@@ -79,14 +79,14 @@ function AGplugCPS.LoadCPSProfile(hostKey, newProfileName)
 					CPS.currentType = host.type
 
 					CPS:setCPBuild(CPS.currentSlot, false)
-					d(zo_strformat("|cFFFFFFCP set <<1>> / <<2>> loaded.|r", hostKey, newProfileName)) 
+					AG.msg(zo_strformat("|cFFFFFFCP set <<1>> / <<2>> loaded.|r", hostKey, newProfileName)) 
 					return
 				end
 			end
 		end
 
 		-- host/profile was not found
-		d(zo_strformat("|cFF0000CP set <<1>> / <<2>> was not found...|r", hostKey, newProfileName)) 
+		AG.msg(zo_strformat("|cFF0000CP set <<1>> / <<2>> was not found...|r", hostKey, newProfileName)) 
 	end
 end
 

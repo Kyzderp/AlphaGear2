@@ -204,6 +204,15 @@ local function alwaysDbg(fmt, ...)
 end
 AG.alwaysDbg = alwaysDbg
 
+local function msg(msg)
+    if (not msg) then return end
+    msg = "[AG2] " .. tostring(msg)
+    if (CHAT_ROUTER) then
+        CHAT_ROUTER:AddSystemMessage(msg)
+    else
+end
+AG.msg = msg
+
 local function IndexOf(tab, item)
     for i, v in ipairs(tab) do
         if (v == item) then
@@ -1648,7 +1657,7 @@ function AG.LoadSkill(nr, slot, pair)
 
     local res = ACTION_BAR_ASSIGNMENT_MANAGER:GetHotbar(pair - 1):AssignSkillToSlotByAbilityId(slot + 2, skillID)
     if not res then
-       d("|cFF0000Failed to set new skill.|r You are probably in combat, kill a mob and try again!")
+       msg("|cFF0000Failed to set new skill.|r You are probably in combat, kill a mob and try again!")
     end
 end
 
@@ -1789,7 +1798,7 @@ function AG.ToggleSet()
     if AGD.GetProfile().lastUsedBuild and AG.previousSet then
         AG.LoadSet (AG.previousSet)
     else
-        d(L.MsgNoPreviousSet)
+        msg(L.MsgNoPreviousSet)
     end
 end
 
@@ -1845,13 +1854,13 @@ function AG.LoadSet(nr)
 
     local profile = AGD.GetProfile()
     if (not profile.builds[nr]) then
-        d("You do not have a build " .. tostring(nr) .. " to equip.")
+        msg("You do not have a build " .. tostring(nr) .. " to equip.")
         return
     end
 
     if IsUnitInCombat("player") then
         AG.pendingSet = nr
-        d(ZOSF(L.SetChangeQueuedMsg, nr, profile.builds[nr].text[1]))
+        msg(ZOSF(L.SetChangeQueuedMsg, nr, profile.builds[nr].text[1]))
     else
         AG.LoadSetInternal(nr)
     end
@@ -1864,7 +1873,7 @@ function AG.LoadSetInternal(nr)
     trace("LoadSetInternal: %d", nr)
 
     if ZO_ActionBar_AreActionBarsLocked() then
-        d("Action bars are locked. Can't load set. You might have to reload the UI!")
+        msg("Action bars are locked. Can't load set.")
         return
     end
 
@@ -1905,7 +1914,7 @@ function AG.LoadSetInternal(nr)
     SWAP = true
     table.insert(AG.Jobs, {AG.JOB_TYPE_SHOW_SWAP_MSG, nil, nil})
 
-    d("Loading Set " .. tostring(AGD.GetProfile().builds[nr].text[1]))
+    msg("Loading build " .. tostring(AGD.GetProfile().builds[nr].text[1]))
 end
 
 function AG.Undress(mode)
@@ -1939,7 +1948,7 @@ function AG.DoTransfer(sourceBagId, sourceBagSlot, targetBagId)
     local result = CallSecureProtected("RequestMoveItem", sourceBagId, sourceBagSlot, targetBagId, emptySlotIndex, 200)
     if not result then
         local link = GetItemLink(sourceBagId, sourceBagSlot)
-        d(ZOSF(L.FailedToMoveItem, link))
+        msg(ZOSF(L.FailedToMoveItem, link))
     end
     return result
 end
@@ -1963,7 +1972,7 @@ function AG.WithdrawItem(itemId)
 
     if GetNumBagFreeSlots(BAG_BACKPACK) == 0 then
         local link = GetItemLink(sourceBagId, sourceBagSlot)
-        d(ZOSF(L.NotEnoughSpaceInBackPack, link))
+        msg(ZOSF(L.NotEnoughSpaceInBackPack, link))
         return false
     end
 
@@ -1989,7 +1998,7 @@ function AG.DepositItem(itemId)
 
     if IsItemStolen(sourceBagId, sourceBagSlot) then
         local link = GetItemLink(sourceBagId, sourceBagSlot)
-        d(ZOSF(L.ItemIsStolen, link))
+        msg(ZOSF(L.ItemIsStolen, link))
         return false
     end
 
@@ -2006,7 +2015,7 @@ function AG.DepositItem(itemId)
     end
 
     local link = GetItemLink(sourceBagId, sourceBagSlot)
-    d(ZOSF(L.NotEnoughSpaceInBank, link))
+    msg(ZOSF(L.NotEnoughSpaceInBank, link))
     return false
 end
 
@@ -2021,7 +2030,7 @@ function AG.UnequipItem(slot)
 
     if GetNumBagFreeSlots(BAG_BACKPACK) == 0 then
         local link = GetItemLink(BAG_WORN, slot)
-        d(ZOSF(L.NotEnoughSpaceInBackPack, link))
+        msg(ZOSF(L.NotEnoughSpaceInBackPack, link))
         return false
     end
 
@@ -2052,7 +2061,7 @@ function AG.EquipItem(gear, targetSlot)
 
             result = true
         else
-            d(ZOSF(L.NotFound, gear.link))
+            msg(ZOSF(L.NotFound, gear.link))
         end
     end
 
@@ -2204,7 +2213,7 @@ function AG.HandleOnUpdate()
                 AG_SwapMessageBg:SetHidden(true)
                 AG.SwapMessage()
             elseif (jobType == AG.JOB_TYPE_MESSAGE) then
-                d(param1)
+                msg(param1)
             end
 
             table.remove(AG.Jobs, 1)
@@ -2615,7 +2624,7 @@ function AG:CommitEditProfileDialog(control)
     AGD.GetProfile().sortKey = editProfileSortKey:GetText()
 
     if oldName ~= AGD.GetProfile().name then
-        d("Profile '"..oldName.."' renamed to '"..AGD.GetProfile().name.."'")
+        msg("Profile '"..oldName.."' renamed to '"..AGD.GetProfile().name.."'")
     end
 
     AG.UpdateSwapMessage()
@@ -2983,7 +2992,7 @@ function AG.RepairItemInStore(bagId, slotId)
     local cost = GetItemRepairCost(bagId, slotId)
     if cost > GetCurrentMoney() then
         -- d("Not enough money to repair gear!")
-        d(L.NotEnoughMoneyForRepairMsg)
+        msg(L.NotEnoughMoneyForRepairMsg)
         return -1
     else
         RepairItem(bagId, slotId)
@@ -3017,12 +3026,12 @@ function AG.RepairInStore()
 
     if totalCost ~= 0 then
         --d(repairedItems.." Items repaired. Total repair cost: "..totalCost.."g")
-        d(ZOSF(L.ItemsRepairedMsg, repairedItems, totalCost))
+        msg(ZOSF(L.ItemsRepairedMsg, repairedItems, totalCost))
     end
 
     if unrepairedItems ~= 0 then
         -- d("Not enough gold for "..unrepairedItems.." Items")
-        d(ZOSF(L.ItemsNotRepairedMsg, unrepairedItems))
+        msg(ZOSF(L.ItemsNotRepairedMsg, unrepairedItems))
     end
 end
 
@@ -3054,7 +3063,7 @@ function AG.UpdateAndChargeItem (slot, agControl, texControl, valControl)
                 trace('Slot: got soul gem, charging...')
 
                 ChargeItemWithSoulGem(BAG_WORN, slot, BAG_BACKPACK, gem)
-                d(ZOSF(L.SoulgemUsed, GetItemLink(BAG_WORN, slot)))
+                msg(ZOSF(L.SoulgemUsed, GetItemLink(BAG_WORN, slot)))
 
                 if AG.isShowWeaponIcon() then
                     -- get current chargeinfo for display
@@ -4077,7 +4086,7 @@ end
 local function ImportProfile(accountName, charId, profileId)
     local otherProfile = AGD.GetAccountTable()[charId].profiles[profileId] -- TODO: what if other account isn't migrated?
     local currentProfile = AGD.GetProfile()
-    d(zo_strformat("Importing profile <<1>> (<<2>>) from <<3>> <<4>>...", otherProfile.name, profileIds, accountName, charId))
+    msg(zo_strformat("Importing profile <<1>> (<<2>>) from <<3>> <<4>>...", otherProfile.name, profileIds, accountName, charId))
 
     for index = 1, #currentProfile.gear do
         AG.handlePreChangeGearSetItems(index)
@@ -4095,19 +4104,19 @@ local function ImportProfile(accountName, charId, profileId)
     AG.UpdateUI()
     UpdateGearButtons()
     UpdateSkillButtons()
-    d("Done")
+    msg("Done")
 end
 AG.ImportProfile = ImportProfile
 
 -- TODO: fix this for char ids
 local function ImportProfileCommand(argString)
     if (argString == "") then
-        d("Usage: /agimport <character name> [profile id]\nNote: this does not import extensions / advanced settings")
+        msg("Usage: /agimport <character name> [profile id]\nNote: this does not import extensions / advanced settings")
         local names = {}
         for name, _ in pairs(GetCharNames()) do
             table.insert(names, name)
         end
-        d("Available Characters: " .. table.concat(names, ", "))
+        msg("Available Characters: " .. table.concat(names, ", "))
         return
     end
 
@@ -4123,12 +4132,12 @@ local function ImportProfileCommand(argString)
     end
 
     if (not GetCharNames()[charName]) then
-        d("No such character \"" .. charName .. "\"")
+        msg("No such character \"" .. charName .. "\"")
         return
     end
     local otherData = otherCharVars[charName]
     if (not otherData) then
-        d("Loading saved vars for \"" .. charName .. "\"")
+        msg("Loading saved vars for \"" .. charName .. "\"")
         -- TODO
         -- otherData = ZO_SavedVars:New('AGX2_Character', AG.characterVariableVersion, nil, init_data, nil, nil, charName)
         otherCharVars[charName] = otherData
@@ -4136,12 +4145,12 @@ local function ImportProfileCommand(argString)
 
     -- List the available profiles
     if (not lastNum) then
-        d("Available Profiles:")
+        msg("Available Profiles:")
         for profileId, profileData in pairs(AGD.GetCharacter(charId).profiles) do -- TODO: fix this
             local profileName = profileData.name
-            d(zo_strformat("<<1>> - <<2>>", profileId, profileName))
+            msg(zo_strformat("<<1>> - <<2>>", profileId, profileName))
         end
-        d("To import a profile, type again: /agimport " .. charName .. " number")
+        msg("To import a profile, type again: /agimport " .. charName .. " number")
         return
     end
 
@@ -4162,7 +4171,7 @@ function AG.LoadProfile(profileId)
     end
 
     if (profileId and not AGD.GetProfile(profileId)) then
-        d("|cFF0000Couldn't load profile that doesn't exist: " .. profileId)
+        msg("|cFF0000Couldn't load profile that doesn't exist: " .. profileId)
         return
     end
 
@@ -4189,7 +4198,7 @@ function AG.LoadProfile(profileId)
     UpdateGearButtons()
 
     if (profileId) then -- don't blab if just refreshing
-        d("Loaded profile '" .. profile.name .. "'")
+        msg("Loaded profile '" .. profile.name .. "'")
 
         AG.HideEditPanel()
     end
@@ -4267,7 +4276,7 @@ function AG.ToggleProfile()
     if AGD.GetCharacter().currentProfileId and AG.previousProfile then
         AG.LoadProfile(AG.previousProfile)
     else
-        d(L.MsgNoPreviousProfile)
+        msg(L.MsgNoPreviousProfile)
     end
 end
 
@@ -4301,7 +4310,7 @@ end
 
 function AG.OnDeleteProfileClicked()
     if (AGD.GetNumProfiles() == 1) then
-        d("You cannot delete the last remaining profile; create another profile first.")
+        msg("You cannot delete the last remaining profile; create another profile first.")
         return
     end
 
@@ -4321,7 +4330,7 @@ end
 function AG.OnDeleteBuildClicked(index)
     local builds = AGD.GetProfile().builds
     if (#builds == 1) then
-        d("You cannot delete the last remaining build; create another build first.")
+        msg("You cannot delete the last remaining build; create another build first.")
         return
     end
 
@@ -4332,7 +4341,7 @@ function AG.OnDeleteBuildClicked(index)
 
     AGConfirmDlg.Show(name, function()
         AGD.DeleteBuild(index)
-        d("Removed build \"" .. name .. "\"")
+        msg("Removed build \"" .. name .. "\"")
         DrawSets()
         AG.HideEditPanel()
         AG.UpdateUI(index)
@@ -4347,13 +4356,13 @@ end
 
 function AG.OnDeleteGearClicked(index)
     if (#AGD.GetProfile().gear == 1) then
-        d("You cannot delete the last remaining gear set; create another gear set first.")
+        msg("You cannot delete the last remaining gear set; create another gear set first.")
         return
     end
 
     AGConfirmDlg.Show("gear set " .. index, function()
         AGD.DeleteGear(index)
-        d(zo_strformat("Removed gear set <<1>>", index))
+        msg(zo_strformat("Removed gear set <<1>>", index))
         DrawSets()
         UpdateGearButtons(index)
         AG.UpdateEditPanel() -- TODO
@@ -4368,13 +4377,13 @@ end
 
 function AG.OnDeleteSkillbarClicked(index)
     if (#AGD.GetProfile().skillbars == 1) then
-        d("You cannot delete the last remaining skillbar; create another skillbar first.")
+        msg("You cannot delete the last remaining skillbar; create another skillbar first.")
         return
     end
 
     AGConfirmDlg.Show("skillbar " .. index, function()
         local removedIndex = AGD.DeleteSkillbar(index)
-        d(zo_strformat("Removed skillbar <<1>>", removedIndex))
+        msg(zo_strformat("Removed skillbar <<1>>", removedIndex))
         DrawSets()
         UpdateSkillButtons(index)
         AG.UpdateEditPanel() -- TODO
@@ -4525,7 +4534,7 @@ function AG:Initialize()
                     -- d("Successfully prehooked ApplySort after AutoCategory init.")
                     EVENT_MANAGER:UnregisterForUpdate(AG.name .. "ApplySortPrehook")
                 elseif (prehookRetries > 5) then
-                    d("Gave up trying to hook AutoCategory. Is something wrong? Yell at Kyzer, probably.")
+                    msg("Gave up trying to hook AutoCategory. Is something wrong?")
                     EVENT_MANAGER:UnregisterForUpdate(AG.name .. "ApplySortPrehook")
                 else
                     prehookRetries = prehookRetries + 1

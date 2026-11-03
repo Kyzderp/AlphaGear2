@@ -287,7 +287,7 @@ local function DeleteProfile(profileId)
     profileId = profileId or charTable.currentProfileId
 
     if (not charTable.profiles[profileId]) then
-        d("|cFF0000Could not delete profile because it doesn't exist: " .. tostring(profileId))
+        AG.msg("|cFF0000Could not delete profile because it doesn't exist: " .. tostring(profileId))
         return
     end
     charTable.profiles[profileId] = nil
