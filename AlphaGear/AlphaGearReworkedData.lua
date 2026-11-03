@@ -1,7 +1,3 @@
--- Uncomment this to use new data structures
-AlphaGearUseReworkedData = true
-if (not AlphaGearUseReworkedData) then return end
-
 AG = {} -- not very unique, but at this point changing it might break other addons' integrations
 AlphaGearDatabase = {} -- data-accessing functions
 local AGD = AlphaGearDatabase

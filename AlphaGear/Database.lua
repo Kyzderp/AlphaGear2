@@ -1,5 +1,3 @@
-if (not AlphaGearUseReworkedData) then return end
-
 local AGD = AlphaGearDatabase
 
 local function IsSkillBarEmpty(tab)

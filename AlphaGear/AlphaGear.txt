@@ -24,8 +24,6 @@ AGSkills17.lua
 AlphaGearReworkedData.lua
 Database.lua
 
-AlphaGear.lua
-
 plugins/FCOIS/ag_fcois.lua
 
 plugins/AlphaStyle/ag_as.lua
