@@ -497,8 +497,8 @@ function AG.InsertItemInGearSet(setId, slot, newId, newLink, newEquipType)
     local function CheckItemConstraints(nr, target)
         local slotToClear = false
         local gearSlots = AGD.GetProfile().gear[nr]
-        local et1 = GetItemLinkEquipType(gearSlots[1].link)
-        local et2 = GetItemLinkEquipType(gearSlots[3].link)
+        local et1 = GetItemLinkEquipType(gearSlots[1] and gearSlots[1].link)
+        local et2 = GetItemLinkEquipType(gearSlots[3] and gearSlots[3].link)
 
         if newEquipType == EQUIP_TYPE_TWO_HAND then
             if target == 1 then
@@ -525,7 +525,7 @@ function AG.InsertItemInGearSet(setId, slot, newId, newLink, newEquipType)
 
         -- revome the item from any slot in the same gear set, in case it was dragged form one slot to another
         for _,xslot in pairs(DUPSLOTS) do
-            if gearSlots[xslot].id == newId then
+            if (IsNonEmpty(gearSlots[xslot]) and gearSlots[xslot].id == newId) then
                 gearSlots[xslot] = { id = 0, link = 0 }
                 AG.ShowButton(WM:GetControlByName('AG_Button_Gear_'..nr..'_'..xslot))
             end
@@ -1440,8 +1440,9 @@ function AG.LoadItem(nr, slotIndex, set)
 
     local targetSlot = SLOTS[slotIndex][1]
 
-    if (IsNonEmpty(AGD.GetProfile().gear[nr][slotIndex].id)) then
-        table.insert(AG.Jobs, {AG.JOB_TYPE_EQUIP_GEAR, AGD.GetProfile().gear[nr][slotIndex], targetSlot})
+    local gearItem = AGD.GetProfile().gear[nr][slotIndex]
+    if (IsNonEmpty(gearItem) and IsNonEmpty(gearItem.id)) then
+        table.insert(AG.Jobs, {AG.JOB_TYPE_EQUIP_GEAR, gearItem, targetSlot})
     elseif set and IsNonEmpty(AGD.GetProfile().builds[set].lock) then
         -- this will corrupt the cache, if the unequipped item is used in a later slot. Not a real use-case...
         table.insert(AG.Jobs, {AG.JOB_TYPE_UNEQUIP_GEAR, targetSlot})
@@ -1482,7 +1483,7 @@ function AG.LoadGear(nr, set)
 
     for slotIndex = 1, #SLOTS do
         -- slotName = SLOTS[slotIndex][3]
-        local newLink = newGear[slotIndex].link
+        local newLink = newGear[slotIndex] and newGear[slotIndex].link
         local hasSet, setName, _, _, _, setId = GetItemLinkSetInfo(newLink)
 
         if not newGearHasMystic and AG.IsItemLinkMythic(newLink) then
@@ -2099,12 +2100,12 @@ function AG.MoveGearSet(deposit, nr, update)
 
 
     for slotIndex = 1, #SLOTS do
-        local id = AGD.GetProfile().gear[nr][slotIndex].id
-        if IsNonEmpty(id) then
+        local gearItem = AGD.GetProfile().gear[nr][slotIndex]
+        if (IsNonEmpty(gearItem) and IsNonEmpty(gearItem.id)) then
             if deposit then
-                table.insert(AG.Jobs, {AG.JOB_TYPE_DEPOSIT_GEAR, id})
+                table.insert(AG.Jobs, {AG.JOB_TYPE_DEPOSIT_GEAR, gearItem.id})
             else
-                table.insert(AG.Jobs, {AG.JOB_TYPE_WITHDRAW_GEAR, id})
+                table.insert(AG.Jobs, {AG.JOB_TYPE_WITHDRAW_GEAR, gearItem.id})
             end
         end
     end
@@ -2445,7 +2446,7 @@ function AG.UpdateItemLinks()
             local gear = AGD.GetProfile().gear[set.gear]
             -- update itemlinks
             for slot = 1, #SLOTS do
-                if IsNonEmpty(gear[slot].id) then
+                if (IsNonEmpty(gear[slot]) and IsNonEmpty(gear[slot].id)) then
                     local sourceBagId, sourceBagSlot = AG.GetItemFromBag(gear[slot].id)
 
                     -- found
@@ -2520,27 +2521,35 @@ function AG.UpdateEditPanel(nr)
         end
     end
 
+    local profileGear = AGD.GetProfile().gear
+
     -- Draws the gear buttons
     for slot = 1, #SLOTS do
         c = WM:GetControlByName('AG_Edit_Gear_1_'..slot)
-        if set.gear and set.gear > 0 and IsNonEmpty(AGD.GetProfile().gear[set.gear][slot].id) then
-            c:SetNormalTexture(GetItemLinkInfo(AGD.GetProfile().gear[set.gear][slot].link))
-            c:GetNamedChild('Bg'):SetCenterColor(Quality(AGD.GetProfile().gear[set.gear][slot].link,0.5))
+        if IsNonEmpty(set.gear) and IsNonEmpty(profileGear[set.gear][slot]) and IsNonEmpty(profileGear[set.gear][slot].id) then
+            c:SetNormalTexture(GetItemLinkInfo(profileGear[set.gear][slot].link))
+            c:GetNamedChild('Bg'):SetCenterColor(Quality(profileGear[set.gear][slot].link,0.5))
         else
             c:SetNormalTexture('esoui/art/characterwindow/gearslot_'..SLOTS[slot][2]..'.dds')
             c:GetNamedChild('Bg'):SetCenterColor(0,0,0,0.2)
         end
     end
 
-    -- draws skill bar 1
-    if IsNonEmpty(set.gear) and IsNonEmpty(AGD.GetProfile().gear[set.gear][1].id) then val = Zero(set.icon[1]) or AG.GetSetIcon(set.gear,1)
-    else val = Zero(set.icon[1]) or 'x.dds' end
+    -- draws skill bar 1 button based on gear weapon
+    if (IsNonEmpty(set.gear) and IsNonEmpty(profileGear[set.gear][1]) and IsNonEmpty(profileGear[set.gear][1].id)) then
+        val = Zero(set.icon[1]) or AG.GetSetIcon(set.gear,1)
+    else
+        val = Zero(set.icon[1]) or 'x.dds'
+    end
     AG_PanelSetPanelScrollChildEditPanelSetBar1PanelBar1IconTex:SetTexture(val)
 
 
     -- draws skill bar 2
-    if IsNonEmpty(set.gear) and IsNonEmpty(AGD.GetProfile().gear[set.gear][3].id) then val = Zero(set.icon[2]) or AG.GetSetIcon(set.gear,2)
-    else val = Zero(set.icon[2]) or 'x.dds' end
+    if (IsNonEmpty(set.gear) and IsNonEmpty(profileGear[set.gear][3]) and IsNonEmpty(profileGear[set.gear][3].id)) then
+        val = Zero(set.icon[2]) or AG.GetSetIcon(set.gear,2)
+    else
+        val = Zero(set.icon[2]) or 'x.dds'
+    end
     AG_PanelSetPanelScrollChildEditPanelSetBar2PanelBar2IconTex:SetTexture(val)
 
     -- builds set label for tooltip
@@ -3866,99 +3875,6 @@ function AG.MenuAction(nr)
     end
 end
 
------------------------------
--- start Kyzer's additions
--- this file is too damn long
------------------------------
--- TODO: still need clearprofile? deleted for now
-
-local function GetCharNames()
-    local charNames = {}
-    for index = 1, GetNumCharacters() do
-        local name, _, _, _, _, _, id, _ = GetCharacterInfo(index)
-        charNames[zo_strformat("<<1>>", name)] = true
-    end
-    return charNames
-end
-
-local function ImportProfile(accountName, charId, profileId)
-    local otherProfile = AGD.GetAccountTable()[charId].profiles[profileId] -- TODO: what if other account isn't migrated?
-    local currentProfile = AGD.GetProfile()
-    d(zo_strformat("Importing profile <<1>> (<<2>>) from <<3>> <<4>>...", otherProfile.name, profileIds, accountName, charId))
-
-    for index = 1, #currentProfile.gear do
-        AG.handlePreChangeGearSetItems(index)
-    end
-
-    ZO_ClearTable(currentProfile)
-    ZO_DeepTableCopy(otherProfile, currentProfile)
-    currentProfile.name = "Copy of " .. currentProfile.name
-
-    for index = 1, #currentProfile.gear do
-        AG.handlePostChangeGearSetItems(index)
-    end
-
-    DrawSets()
-    AG.UpdateUI()
-    UpdateGearButtons()
-    UpdateSkillButtons()
-    d("Done")
-end
-AG.ImportProfile = ImportProfile
-
--- TODO: fix this for char ids
-local function ImportProfileCommand(argString)
-    if (argString == "") then
-        d("Usage: /agimport <character name> [profile id]\nNote: this does not import extensions / advanced settings")
-        local names = {}
-        for name, _ in pairs(GetCharNames()) do
-            table.insert(names, name)
-        end
-        d("Available Characters: " .. table.concat(names, ", "))
-        return
-    end
-
-    local lastSpaceIndex = string.find(argString, " [^ ]*$")
-    if (not lastSpaceIndex) then lastSpaceIndex = 0 end
-    local lastWord = string.sub(argString, lastSpaceIndex + 1)
-    local lastNum = tonumber(lastWord)
-    local charName = ""
-    if (lastNum == nil or lastSpaceIndex == 0) then
-        charName = argString
-    else
-        charName = string.sub(argString, 1, lastSpaceIndex - 1)
-    end
-
-    if (not GetCharNames()[charName]) then
-        d("No such character \"" .. charName .. "\"")
-        return
-    end
-    local otherData = otherCharVars[charName]
-    if (not otherData) then
-        d("Loading saved vars for \"" .. charName .. "\"")
-        -- TODO
-        -- otherData = ZO_SavedVars:New('AGX2_Character', AG.characterVariableVersion, nil, init_data, nil, nil, charName)
-        otherCharVars[charName] = otherData
-    end
-
-    -- List the available profiles
-    if (not lastNum) then
-        d("Available Profiles:")
-        for profileId, profileData in pairs(AGD.GetCharacter(charId).profiles) do -- TODO: fix this
-            local profileName = profileData.name
-            d(zo_strformat("<<1>> - <<2>>", profileId, profileName))
-        end
-        d("To import a profile, type again: /agimport " .. charName .. " number")
-        return
-    end
-
-    AG.ImportProfile(GetUnitDisplayName("player"), charName, lastNum)
-end
-
-------------------------
--- end Kyzer's additions
-------------------------
-
 function AG.Tooltip(c, visible, edit)
     -- trace('Tooltip')
     local function FadeIn(control)
@@ -4146,6 +4062,99 @@ local function UpdateGearButtons(from, to)
         end
     end
 end
+
+-----------------------------
+-- start import
+-- this file is too damn long
+-----------------------------
+-- TODO: still need clearprofile? deleted for now
+
+local function GetCharNames()
+    local charNames = {}
+    for index = 1, GetNumCharacters() do
+        local name, _, _, _, _, _, id, _ = GetCharacterInfo(index)
+        charNames[zo_strformat("<<1>>", name)] = true
+    end
+    return charNames
+end
+
+local function ImportProfile(accountName, charId, profileId)
+    local otherProfile = AGD.GetAccountTable()[charId].profiles[profileId] -- TODO: what if other account isn't migrated?
+    local currentProfile = AGD.GetProfile()
+    d(zo_strformat("Importing profile <<1>> (<<2>>) from <<3>> <<4>>...", otherProfile.name, profileIds, accountName, charId))
+
+    for index = 1, #currentProfile.gear do
+        AG.handlePreChangeGearSetItems(index)
+    end
+
+    ZO_ClearTable(currentProfile)
+    ZO_DeepTableCopy(otherProfile, currentProfile)
+    currentProfile.name = "Copy of " .. currentProfile.name
+
+    for index = 1, #currentProfile.gear do
+        AG.handlePostChangeGearSetItems(index)
+    end
+
+    DrawSets()
+    AG.UpdateUI()
+    UpdateGearButtons()
+    UpdateSkillButtons()
+    d("Done")
+end
+AG.ImportProfile = ImportProfile
+
+-- TODO: fix this for char ids
+local function ImportProfileCommand(argString)
+    if (argString == "") then
+        d("Usage: /agimport <character name> [profile id]\nNote: this does not import extensions / advanced settings")
+        local names = {}
+        for name, _ in pairs(GetCharNames()) do
+            table.insert(names, name)
+        end
+        d("Available Characters: " .. table.concat(names, ", "))
+        return
+    end
+
+    local lastSpaceIndex = string.find(argString, " [^ ]*$")
+    if (not lastSpaceIndex) then lastSpaceIndex = 0 end
+    local lastWord = string.sub(argString, lastSpaceIndex + 1)
+    local lastNum = tonumber(lastWord)
+    local charName = ""
+    if (lastNum == nil or lastSpaceIndex == 0) then
+        charName = argString
+    else
+        charName = string.sub(argString, 1, lastSpaceIndex - 1)
+    end
+
+    if (not GetCharNames()[charName]) then
+        d("No such character \"" .. charName .. "\"")
+        return
+    end
+    local otherData = otherCharVars[charName]
+    if (not otherData) then
+        d("Loading saved vars for \"" .. charName .. "\"")
+        -- TODO
+        -- otherData = ZO_SavedVars:New('AGX2_Character', AG.characterVariableVersion, nil, init_data, nil, nil, charName)
+        otherCharVars[charName] = otherData
+    end
+
+    -- List the available profiles
+    if (not lastNum) then
+        d("Available Profiles:")
+        for profileId, profileData in pairs(AGD.GetCharacter(charId).profiles) do -- TODO: fix this
+            local profileName = profileData.name
+            d(zo_strformat("<<1>> - <<2>>", profileId, profileName))
+        end
+        d("To import a profile, type again: /agimport " .. charName .. " number")
+        return
+    end
+
+    AG.ImportProfile(GetUnitDisplayName("player"), charName, lastNum)
+end
+
+------------------------
+-- end import
+------------------------
 
 --- loads profile with Id profileId and updates the UI
 function AG.LoadProfile(profileId)
