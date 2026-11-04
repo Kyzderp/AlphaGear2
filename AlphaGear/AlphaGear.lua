@@ -881,11 +881,12 @@ local function DrawSkillBarButtons(nr)
                     (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_SKILLS),
                     true,
                     true,
+                    "Delete skillbar",
                     false,
                     false,
                     false,
                     false,
-                    "Delete skillbar"})
+                })
                 MENU.nr = nr
                 MENU.type = AG.MENU_TYPE_SKILLS
             elseif shift then
@@ -959,7 +960,17 @@ local function DrawGearBarButtons(nr)
                 -- open context menu
                 local isBanking = IMGR:IsBanking()
 
-                AG.DrawMenu(self, {true, (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_GEAR), true, true, isBanking, isBanking, isBanking, isBanking, "Delete gear set"})
+                AG.DrawMenu(self, {
+                    true,
+                    (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_GEAR),
+                    true,
+                    true,
+                    "Delete gear set",
+                    isBanking,
+                    isBanking,
+                    isBanking,
+                    isBanking,
+                })
                 MENU.nr = nr
                 MENU.type = AG.MENU_TYPE_GEAR
             elseif shift then
@@ -3852,31 +3863,31 @@ function AG.MenuAction(nr)
             AG.UpdateUI(MENU.nr,MENU.nr)
         end
     elseif nr == 5 then
-        -- deposit
-        if MENU.type == AG.MENU_TYPE_GEAR then
-            AG.MoveGearSet(true, MENU.nr, true)
-        end
-    elseif nr == 6 then
-        -- withdraw
-        if MENU.type == AG.MENU_TYPE_GEAR then
-            AG.MoveGearSet(false, MENU.nr, true)
-        end
-    elseif nr == 7 then
-        -- deposit profile
-        if MENU.type == AG.MENU_TYPE_GEAR then
-            AG.MoveGearSetAll(true)
-        end
-    elseif nr == 8 then
-        -- withdraw profile
-        if MENU.type == AG.MENU_TYPE_GEAR then
-            AG.MoveGearSetAll(false)
-        end
-    elseif nr == 9 then
         -- Delete set
         if MENU.type == AG.MENU_TYPE_GEAR then
             AG.OnDeleteGearClicked(MENU.nr)
         elseif (MENU.type == AG.MENU_TYPE_SKILLS) then
             AG.OnDeleteSkillbarClicked(MENU.nr)
+        end
+    elseif nr == 6 then
+        -- deposit
+        if MENU.type == AG.MENU_TYPE_GEAR then
+            AG.MoveGearSet(true, MENU.nr, true)
+        end
+    elseif nr == 7 then
+        -- withdraw
+        if MENU.type == AG.MENU_TYPE_GEAR then
+            AG.MoveGearSet(false, MENU.nr, true)
+        end
+    elseif nr == 8 then
+        -- deposit profile
+        if MENU.type == AG.MENU_TYPE_GEAR then
+            AG.MoveGearSetAll(true)
+        end
+    elseif nr == 9 then
+        -- withdraw profile
+        if MENU.type == AG.MENU_TYPE_GEAR then
+            AG.MoveGearSetAll(false)
         end
     end
 end

@@ -71,35 +71,35 @@
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button4"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText(AGLang.msg.ToBank)</OnInitialized>
+              <OnInitialized>self:SetText("Delete set")</OnInitialized>
               <OnClicked>AG.MenuAction(5)</OnClicked>
             </Button>
             <Button name="$(parent)Button6" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button5"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText(AGLang.msg.FromBank)</OnInitialized>
+              <OnInitialized>self:SetText(AGLang.msg.ToBank)</OnInitialized>
               <OnClicked>AG.MenuAction(6)</OnClicked>
             </Button>
             <Button name="$(parent)Button7" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button6"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText(AGLang.msg.ToBankAll)</OnInitialized>
+              <OnInitialized>self:SetText(AGLang.msg.FromBank)</OnInitialized>
               <OnClicked>AG.MenuAction(7)</OnClicked>
             </Button>
             <Button name="$(parent)Button8" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button7"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText(AGLang.msg.FromBankAll)</OnInitialized>
+              <OnInitialized>self:SetText(AGLang.msg.ToBankAll)</OnInitialized>
               <OnClicked>AG.MenuAction(8)</OnClicked>
             </Button>
             <Button name="$(parent)Button9" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button8"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText("Delete set")</OnInitialized>
+              <OnInitialized>self:SetText(AGLang.msg.FromBankAll)</OnInitialized>
               <OnClicked>AG.MenuAction(9)</OnClicked>
             </Button>
           </Controls>
