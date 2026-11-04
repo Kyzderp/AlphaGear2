@@ -259,6 +259,24 @@ AGD.GetNumProfiles = GetNumProfiles
 
 
 ---------------------------------------------------------------------
+-- Internal data reordering
+---------------------------------------------------------------------
+-- Update all builds that link to gear or skillbars that have changed
+-- func params: (oldValue) should return: newValue
+local function UpdateBuildLinks(gearFunc, skillbarFunc)
+    for _, buildData in pairs(profileTable.builds) do
+        if (gearFunc) then
+            buildData.gear = gearFunc(buildData.gear)
+        end
+        if (skillbarFunc) then
+            buildData.skill[1] = skillbarFunc(buildData.skill[1])
+            buildData.skill[2] = skillbarFunc(buildData.skill[2])
+        end
+    end
+end
+
+
+---------------------------------------------------------------------
 -- Creation / deletion
 ---------------------------------------------------------------------
 local function FindUnusedProfileId()
@@ -326,13 +344,13 @@ local function DeleteGear(index)
 
     -- Update all builds that link to gear that has shifted
     -- If the old index is equal to the removed index, then it should be cleared because the gear no longer exists. If the old index is larger than the removed index, then the index needs to be decremented to account for the shift
-    for _, buildData in pairs(profileTable.builds) do
-        if (buildData.gear == index) then
-            buildData.gear = nil -- TODO: is nil ok?
-        elseif (buildData.gear and buildData.gear > index) then
-            buildData.gear = buildData.gear - 1
+    UpdateBuildLinks(function(oldValue)
+        if (oldValue == index) then
+            return nil
+        elseif (oldValue and oldValue > index) then
+            return oldValue - 1
         end
-    end
+    end, nil)
 
     return index
 end
@@ -355,19 +373,13 @@ local function DeleteSkillbar(index)
 
     -- Update all builds that link to skillbars that have shifted
     -- If the old index is equal to the removed index, then it should be cleared because the skillbar no longer exists. If the old index is larger than the removed index, then the index needs to be decremented to account for the shift
-    for _, buildData in pairs(profileTable.builds) do
-        if (buildData.skill[1] == index) then
-            buildData.skill[1] = nil -- TODO: is nil ok?
-        elseif (buildData.skill[1] and buildData.skill[1] > index) then
-            buildData.skill[1] = buildData.skill[1] - 1
+    UpdateBuildLinks(nil, function(oldValue)
+        if (oldValue == index) then
+            return nil
+        elseif (oldValue and oldValue > index) then
+            return oldValue - 1
         end
-        if (buildData.skill[2] == index) then
-            buildData.skill[2] = nil -- TODO: is nil ok?
-        elseif (buildData.skill[2] and buildData.skill[2] > index) then
-            buildData.skill[2] = buildData.skill[2] - 1
-        end
-    end
-    -- TODO: prob refactor some common code
+    end)
 
     return index
 end
@@ -375,4 +387,44 @@ AGD.DeleteSkillbar = DeleteSkillbar
 
 
 ---------------------------------------------------------------------
+-- Reordering
 ---------------------------------------------------------------------
+local function ReorderBuild(index, offset)
+    local build = table.remove(#profileTable.builds, index)
+    table.insert(profileTable.builds, index + offset, build)
+end
+AGD.ReorderBuild = ReorderBuild
+
+-- Reorder gear set and update any builds that link to either affected gear
+local function ReorderGear(index, offset)
+    local newIndex = index + offset
+    local gear = table.remove(#profileTable.gear, index)
+    table.insert(profileTable.gear, newIndex, gear)
+
+    -- Swap the linked
+    UpdateBuildLinks(function(oldValue)
+        if (oldValue == index) then
+            return newIndex
+        elseif (oldValue == newIndex) then
+            return index
+        end
+    end, nil)
+end
+AGD.ReorderGear = ReorderGear
+
+-- Reorder skillbar and update any builds that link to either affected skillbar
+local function ReorderSkillbar(index, offset)
+    local newIndex = index + offset
+    local skillbar = table.remove(#profileTable.skillbars, index)
+    table.insert(profileTable.skillbars, newIndex, skillbar)
+
+    -- Swap the linked
+    UpdateBuildLinks(nil, function(oldValue)
+        if (oldValue == index) then
+            return newIndex
+        elseif (oldValue == newIndex) then
+            return index
+        end
+    end)
+end
+AGD.ReorderSkillbar = ReorderSkillbar

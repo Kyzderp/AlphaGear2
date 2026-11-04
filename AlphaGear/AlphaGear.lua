@@ -30,6 +30,7 @@ AG.OUTFIT_KEEP = -1
 
 AG.MODE_GEAR = 'Gear'
 AG.MODE_SKILL = 'Skill'
+AG.MODE_BUILD = "Build"
 
 AG.MENU_TYPE_GEAR = 1
 AG.MENU_TYPE_SKILLS = 2
@@ -4299,10 +4300,6 @@ end
 ---------------------------------------------------------------------
 -- Revamped UI
 ---------------------------------------------------------------------
--- If profile contents' number of sets change, need to adjust the lists
-local function RefreshUI()
-end
-
 function AG.OnAddNewProfileClicked()
     local profileId = AGD.CreateProfile()
     AG.LoadProfile(profileId)
@@ -4388,6 +4385,40 @@ function AG.OnDeleteSkillbarClicked(index)
         UpdateSkillButtons(index)
         AG.UpdateEditPanel() -- TODO
     end)
+end
+
+---------------------------------------------------------------------
+-- Ordering buttons
+function AG.OnMoveUpClicked(mode, index)
+    if (mode == AG.MODE_BUILD) then
+        AGD.ReorderBuild(index, -1)
+        AG.HideEditPanel()
+        AG.UpdateUI(index - 1, index)
+    elseif (mode == AG.MODE_GEAR) then
+        AGD.ReorderGear(index, -1)
+        UpdateGearButtons(index - 1, index)
+        AG.UpdateEditPanel()
+    elseif (mode == AG.MODE_SKILL) then
+        AGD.ReorderSkillbar(index, -1)
+        UpdateSkillButtons(index - 1, index)
+        AG.UpdateEditPanel()
+    end
+end
+
+function AG.OnMoveDownClicked(mode, index)
+    if (mode == AG.MODE_BUILD) then
+        AGD.ReorderBuild(index, 1)
+        AG.HideEditPanel()
+        AG.UpdateUI(index, index + 1)
+    elseif (mode == AG.MODE_GEAR) then
+        AGD.ReorderGear(index, 1)
+        UpdateGearButtons(index, index + 1)
+        AG.UpdateEditPanel()
+    elseif (mode == AG.MODE_SKILL) then
+        AGD.ReorderSkillbar(index, 1)
+        UpdateSkillButtons(index, index + 1)
+        AG.UpdateEditPanel()
+    end
 end
 
 
