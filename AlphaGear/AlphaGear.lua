@@ -4400,6 +4400,93 @@ end
 
 ---------------------------------------------------------------------
 -- Ordering buttons
+local moveUpControlPool, moveDownControlPool, reordering
+local upKeys = {}
+local upControls = {}
+local downKeys = {}
+local downControls = {}
+
+local function CreateMoveUpControl(parent, mode, index, enabled)
+    local control, key = moveUpControlPool:AcquireObject()
+    control:SetAnchor(BOTTOMLEFT, parent, LEFT, 5, -2)
+    control.mode = mode
+    control.index = index
+    control:SetEnabled(enabled)
+    upKeys[mode .. index] = key
+    upControls[key] = control
+end
+
+local function CreateMoveDownControl(parent, mode, index, enabled)
+    local control, key = moveDownControlPool:AcquireObject()
+    control:SetAnchor(TOPLEFT, parent, LEFT, 5, 2)
+    control.mode = mode
+    control.index = index
+    control:SetEnabled(enabled)
+    downKeys[mode .. index] = key
+    downControls[key] = control
+end
+
+-- Swap the buttons' indices and enabled state when 2 lines are swapped
+local function SwapButtonIndices(keysTable, controlsTable, mode, index1, index2)
+    local key1 = keysTable[mode .. index1]
+    local control1 = controlsTable[key1]
+
+    local key2 = keysTable[mode .. index2]
+    local control2 = controlsTable[key2]
+
+    keysTable[mode .. index1] = control2
+    keysTable[mode .. index2] = control1
+    control1.index = index2
+    control2.index = index1
+    local tempEnabled = control1:IsEnabled()
+    control1:SetEnabled(control2:IsEnabled())
+    control2:SetEnabled(tempEnabled)
+end
+
+local function SwapButtons(mode, index1, index2)
+    SwapButtonIndices(upKeys, upControls, mode, index1, index2)
+    SwapButtonIndices(downKeys, downControls, mode, index1, index2)
+end
+
+function AG.ToggleReorderMode()
+    if (reordering) then
+        reordering = false
+        for key, _ in pairs(upControls) do
+            moveUpControlPool:ReleaseObject(key)
+            upControls[key] = nil
+        end
+        for key, _ in pairs(downControls) do
+            moveDownControlPool:ReleaseObject(key)
+            downControls[key] = nil
+        end
+        ZO_ClearTable(upKeys)
+        ZO_ClearTable(downKeys)
+    else
+        if (not moveUpControlPool) then
+            moveUpControlPool = ZO_ControlPool:New("AG_MoveUpButton_Template", AG_Panel, "UpButton")
+            moveDownControlPool = ZO_ControlPool:New("AG_MoveDownButton_Template", AG_Panel, "DownButton")
+        end
+
+        reordering = true
+        local profile = AGD.GetProfile()
+
+        for i = 1, #profile.builds do
+            CreateMoveUpControl("AG_SetSelector_" .. i, AG.MODE_BUILD, i, i > 1)
+            CreateMoveDownControl("AG_SetSelector_" .. i, AG.MODE_BUILD, i, i < (#profile.builds))
+        end
+
+        for i = 1, #profile.gear do
+            CreateMoveUpControl("AG_Selector_Gear_" .. i, AG.MODE_GEAR, i, i > 1)
+            CreateMoveDownControl("AG_Selector_Gear_" .. i, AG.MODE_GEAR, i, i < (#profile.builds))
+        end
+
+        for i = 1, #profile.skillbars do
+            CreateMoveUpControl("AG_Selector_Skill_" .. i, AG.MODE_SKILL, i, i > 1)
+            CreateMoveDownControl("AG_Selector_Skill_" .. i, AG.MODE_SKILL, i, i < (#profile.builds))
+        end
+    end
+end
+
 function AG.OnMoveUpClicked(mode, index)
     if (mode == AG.MODE_BUILD) then
         AGD.ReorderBuild(index, -1)
@@ -4413,7 +4500,11 @@ function AG.OnMoveUpClicked(mode, index)
         AGD.ReorderSkillbar(index, -1)
         UpdateSkillButtons(index - 1, index)
         AG.UpdateEditPanel()
+    else
+        d("|cFF0000No mode specified???")
+        return
     end
+    SwapButtons(mode, index - 1, index)
 end
 
 function AG.OnMoveDownClicked(mode, index)
@@ -4429,7 +4520,11 @@ function AG.OnMoveDownClicked(mode, index)
         AGD.ReorderSkillbar(index, 1)
         UpdateSkillButtons(index, index + 1)
         AG.UpdateEditPanel()
+    else
+        d("|cFF0000No mode specified???")
+        return
     end
+    SwapButtons(mode, index, index + 1)
 end
 
 
@@ -4505,7 +4600,7 @@ function AG:Initialize()
     -- end
 
     -- New data structure since 8.0.0
-    AGD.MigrateData()
+    AGD.MigrateData(true)
 
     -- Initialize profile structure
     if AGD.GetCharacter().profiles == nil then

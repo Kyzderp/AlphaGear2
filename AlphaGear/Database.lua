@@ -1,9 +1,13 @@
 local AGD = AlphaGearDatabase
 
+local function IsEmpty(val)
+    return val == nil or val == 0 or val == false
+end
+
 local function IsSkillBarEmpty(tab)
     if (not tab) then return true end
     for _, v in pairs(tab) do
-        if (v ~= 0) then return false end
+        if (not IsEmpty(v)) then return false end
     end
     return true
 end
@@ -12,7 +16,7 @@ local function IsGearEmpty(tab)
     if (not tab) then return true end
     for _, slot in pairs(tab) do
         for _, v in pairs(slot) do
-            if (v ~= 0) then return false end
+            if (not IsEmpty(v)) then return false end
         end
     end
     return true
@@ -87,7 +91,37 @@ local function InitEmptyCharacter(name, numBuildButtons)
     }
 end
 
-local function MigrateData()
+local function CleanZeroes(profile)
+    local numCleaned = 0
+    for i, gear in ipairs(profile.gear) do
+        for j, slot in ipairs(gear) do
+            if (IsEmpty(slot.id) and IsEmpty(slot.link)) then
+                gear[j] = nil
+                numCleaned = numCleaned + 1
+            end
+        end
+    end
+
+    for i, skillbar in ipairs(profile.skillbars) do
+        for k, v in ipairs(skillbar) do
+            if (IsEmpty(v)) then
+                skillbar[k] = nil
+                numCleaned = numCleaned + 1
+            end
+        end
+    end
+
+    AG.alwaysDbg("Cleaned out " .. numCleaned .. " zeroes from profile " .. profile.name)
+end
+
+local function CleanAllZeroes()
+    for _, profile in pairs(AGD.GetCharacter().profiles) do
+        CleanZeroes(profile)
+    end
+end
+AGD.CleanAllZeroes = CleanAllZeroes
+
+local function MigrateData(deleteEmpty)
     if (not AGX2_Character) then
         AGX2_Character = {}
     end
@@ -120,10 +154,10 @@ local function MigrateData()
             local newData = InitEmptyCharacter(name, charTable.setamount)
 
             for profileId, profileData in pairs(charTable.profiles) do
-                -- We want to remove the last x empty sets of each type, e.g. if there's gear in only slots 1 and 4, we can remove everything from 5 onward.
-                local lastNonEmptySkill = 0
-                local lastNonEmptyGear = 0
-                local lastNonEmptyBuild = 0
+                -- We want to remove the last x empty sets of each type, e.g. if there's gear in only slots 1 and 4, we can remove everything from 5 onward. If user chooses not to delete empty, treat it as if the last one is nonempty
+                local lastNonEmptySkill = deleteEmpty and 0 or 16
+                local lastNonEmptyGear = deleteEmpty and 0 or 16
+                local lastNonEmptyBuild = deleteEmpty and 0 or 16
                 -- But also don't delete potentially-empty sets if they're linked to build sets
                 local usedGearSets = {} -- map
                 local usedSkillSets = {}
@@ -133,17 +167,18 @@ local function MigrateData()
                     AG.alwaysDbg(string.format("Profile \"%s\" (%s) is uninitialized, not migrating the data.", profileData.name, profileId))
                 else
                     -- Do a first pass to determine what is empty until the end, so we can delete excess
+                    -- Also change completely empty sets to empty tables to cut down on SV
                     -- The old stuff should be contiguous
                     for i = 1, 16 do
-                        if (not IsSkillBarEmpty(profileData.setdata[i].Skill)) then
+                        if (not IsSkillBarEmpty(profileData.setdata[i].Skill) and lastNonEmptySkill < i) then
                             lastNonEmptySkill = i
                         end
 
-                        if (not IsGearEmpty(profileData.setdata[i].Gear)) then
+                        if (not IsGearEmpty(profileData.setdata[i].Gear) and lastNonEmptyGear < i) then
                             lastNonEmptyGear = i
                         end
 
-                        if (not IsBuildEmpty(profileData.setdata[i].Set)) then
+                        if (not IsBuildEmpty(profileData.setdata[i].Set) and lastNonEmptyBuild < i) then
                             lastNonEmptyBuild = i
                         end
 
@@ -195,6 +230,8 @@ local function MigrateData()
             end
             accTable[charId] = newData
             accTable[name] = nil
+
+            CleanAllZeroes()
         elseif (not accTable[charId]) then
             -- Nothing to migrate, just create empty
             accTable[charId] = InitEmptyCharacter(name)

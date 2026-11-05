@@ -650,20 +650,6 @@
       </Controls>
     </Button>
 
-    <Button name="AG_DeleteBuildButton_Template" clickSound="Click" hidden="true" virtual="true">
-      <Dimensions x="35" y="35"/>
-      <Textures normal="esoui/art/inventory/inventory_tabicon_trash_up.dds" pressed="esoui/art/inventory/inventory_tabicon_trash_down.dds" mouseOver="esoui/art/inventory/inventory_tabicon_trash_over.dds"/>
-      <OnMouseEnter>
-        AG.Tooltip(self, true)
-      </OnMouseEnter>
-      <OnMouseExit>
-        AG.Tooltip(self, false)
-      </OnMouseExit>
-      <OnMouseDown>
-        AG.OnDeleteBuildClicked(self.buildIndex)
-      </OnMouseDown>
-    </Button>
-
     <Button name="AG_CreateBuildBar_Template" clickSound="Click" virtual="true">
       <Dimensions y="44"/>
       <Textures normal="AlphaGear/asset/grey.dds" mouseOver="AlphaGear/asset/light.dds"/>
@@ -681,6 +667,36 @@
           <AnchorFill/>
         </Label>
       </Controls>
+    </Button>
+
+    <Button name="AG_DeleteBuildButton_Template" clickSound="Click" hidden="true" virtual="true">
+      <Dimensions x="35" y="35"/>
+      <Textures normal="esoui/art/inventory/inventory_tabicon_trash_up.dds" pressed="esoui/art/inventory/inventory_tabicon_trash_down.dds" mouseOver="esoui/art/inventory/inventory_tabicon_trash_over.dds"/>
+      <OnMouseEnter>
+        AG.Tooltip(self, true)
+      </OnMouseEnter>
+      <OnMouseExit>
+        AG.Tooltip(self, false)
+      </OnMouseExit>
+      <OnMouseDown>
+        AG.OnDeleteBuildClicked(self.buildIndex)
+      </OnMouseDown>
+    </Button>
+
+    <Button name="AG_MoveUpButton_Template" clickSound="Click" virtual="true">
+      <Dimensions x="16" y="16"/>
+      <Textures normal="esoui/art/buttons/scrollbox_uparrow_up.dds" pressed="esoui/art/buttons/scrollbox_uparrow_down.dds" mouseOver="esoui/art/buttons/scrollbox_uparrow_over.dds"/>
+      <OnMouseDown>
+        AG.OnMoveUpClicked(self.mode, self.index)
+      </OnMouseDown>
+    </Button>
+
+    <Button name="AG_MoveDownButton_Template" clickSound="Click" virtual="true">
+      <Dimensions x="16" y="16"/>
+      <Textures normal="esoui/art/buttons/scrollbox_downarrow_up.dds" pressed="esoui/art/buttons/scrollbox_downarrow_down.dds" mouseOver="esoui/art/buttons/scrollbox_downarrow_over.dds"/>
+      <OnMouseDown>
+        AG.OnMoveDownClicked(self.mode, self.index)
+      </OnMouseDown>
     </Button>
 
     <TopLevelControl name="AG_SetTip" hidden="true">
