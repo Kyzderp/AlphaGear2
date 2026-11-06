@@ -122,7 +122,87 @@ local function CleanAllZeroes()
 end
 AGD.CleanAllZeroes = CleanAllZeroes
 
-local function MigrateData(deleteEmpty)
+local function DeleteNonContiguous()
+    local profiles = AGD.GetCharacter().profiles
+    for profileId, profileData in pairs(profiles) do
+        -- We want to remove the last x empty sets of each type, e.g. if there's gear in only slots 1 and 4, we can remove everything from 5 onward
+        local lastNonEmptySkill = 0
+        local lastNonEmptyGear = 0
+        local lastNonEmptyBuild = 0
+        -- But also don't delete potentially-empty sets if they're linked to build sets
+        local usedGearSets = {} -- map
+        local usedSkillSets = {}
+
+        -- Do a first pass to determine what is empty until the end, so we can delete excess
+        -- Also change completely empty sets to empty tables to cut down on SV
+        -- The old stuff should be contiguous
+        for i = 1, #profileData.skillbars do
+            if (not IsSkillBarEmpty(profileData.skillbars[i])) then
+                lastNonEmptySkill = i
+            end
+        end
+
+        for i = 1, #profileData.gear do
+            if (not IsGearEmpty(profileData.gear[i])) then
+                lastNonEmptyGear = i
+            end
+        end
+
+        for i, build in ipairs(profileData.builds) do
+            if (not IsBuildEmpty(build)) then
+                lastNonEmptyBuild = i
+            end
+
+            -- Save linked stuff
+            if (build.gear) then
+                usedGearSets[build.gear] = true
+            end
+            if (build.skill and build.skill[1]) then
+                usedSkillSets[build.skill[1]] = true
+            end
+            if (build.skill and build.skill[2]) then
+                usedSkillSets[build.skill[2]] = true
+            end
+        end
+
+        -- Find the last linked gear and skills
+        for gearIndex, _ in pairs(usedGearSets) do
+            if (gearIndex > lastNonEmptyGear) then
+                lastNonEmptyGear = gearIndex
+            end
+        end
+
+        for skillbarIndex, _ in pairs(usedSkillSets) do
+            if (skillbarIndex > lastNonEmptySkill) then
+                lastNonEmptySkill = skillbarIndex
+            end
+        end
+
+        if (lastNonEmptyBuild == 0 and lastNonEmptyGear == 0 and lastNonEmptySkill == 0) then
+            AG.alwaysDbg(string.format("Profile \"%s\" (%s) is empty, deleting the profile.", profileData.name, profileId))
+            profiles[profileId] = nil
+        else
+            -- Delete from last non empty + 1 onwards, but always keep the first for gear and builds, and first 2 for skills
+            lastNonEmptySkill = math.max(lastNonEmptySkill, 2) + 1 -- keep at least first 2 for skills
+            for i = lastNonEmptySkill, #profileData.skillbars do
+                profileData.skillbars[i] = nil
+            end
+
+            lastNonEmptyGear = math.max(lastNonEmptyGear, 1) + 1 -- keep first for gear
+            for i = lastNonEmptyGear, #profileData.gear do
+                profileData.gear[i] = nil
+            end
+
+            lastNonEmptyBuild = math.max(lastNonEmptyBuild, 1) + 1 -- keep first for build
+            for i = lastNonEmptyBuild, #profileData.builds do
+                profileData.builds[i] = nil
+            end
+        end
+    end
+end
+AGD.DeleteNonContiguous = DeleteNonContiguous
+
+local function MigrateData()
     if (not AGX2_Character) then
         AGX2_Character = {}
     end
@@ -154,77 +234,18 @@ local function MigrateData(deleteEmpty)
             local newData = InitEmptyCharacter(name, charTable.setamount)
 
             for profileId, profileData in pairs(charTable.profiles) do
-                -- We want to remove the last x empty sets of each type, e.g. if there's gear in only slots 1 and 4, we can remove everything from 5 onward. If user chooses not to delete empty, treat it as if the last one is nonempty
-                local lastNonEmptySkill = deleteEmpty and 0 or 16
-                local lastNonEmptyGear = deleteEmpty and 0 or 16
-                local lastNonEmptyBuild = deleteEmpty and 0 or 16
-                -- But also don't delete potentially-empty sets if they're linked to build sets
-                local usedGearSets = {} -- map
-                local usedSkillSets = {}
-
-                -- Could be an uninitialized profile from before
+                -- Could be an uninitialized profile from before. Still delete this though
                 if (not profileData.setdata) then
                     AG.alwaysDbg(string.format("Profile \"%s\" (%s) is uninitialized, not migrating the data.", profileData.name, profileId))
                 else
-                    -- Do a first pass to determine what is empty until the end, so we can delete excess
-                    -- Also change completely empty sets to empty tables to cut down on SV
-                    -- The old stuff should be contiguous
+                    -- Finally can copy everything up until the non-empty ones
+                    newData.profiles[profileId] = InitEmptyProfile(profileData.name, profileData.sortKey, profileData.lastset)
+                    local newProfile = newData.profiles[profileId]
+
                     for i = 1, 16 do
-                        if (not IsSkillBarEmpty(profileData.setdata[i].Skill) and lastNonEmptySkill < i) then
-                            lastNonEmptySkill = i
-                        end
-
-                        if (not IsGearEmpty(profileData.setdata[i].Gear) and lastNonEmptyGear < i) then
-                            lastNonEmptyGear = i
-                        end
-
-                        if (not IsBuildEmpty(profileData.setdata[i].Set) and lastNonEmptyBuild < i) then
-                            lastNonEmptyBuild = i
-                        end
-
-                        -- Save linked stuff
-                        usedGearSets[profileData.setdata[i].Set.gear] = true
-                        usedSkillSets[profileData.setdata[i].Set.skill[1]] = true
-                        usedSkillSets[profileData.setdata[i].Set.skill[2]] = true
-                    end
-
-                    -- Find the last linked gear and skills
-                    for i = 16, 1, -1 do
-                        if (usedGearSets[i] and i > lastNonEmptyGear) then
-                            lastNonEmptyGear = i
-                        end
-                        if (usedSkillSets[i] and i > lastNonEmptySkill) then
-                            lastNonEmptySkill = i
-                        end
-                    end
-
-                    if (lastNonEmptyBuild == 0 and lastNonEmptyGear == 0 and lastNonEmptySkill == 0) then
-                        AG.alwaysDbg(string.format("Profile \"%s\" (%s) is empty, not migrating the data.", profileData.name, profileId))
-                    else
-                        -- Finally can copy everything up until the non-empty ones
-                        newData.profiles[profileId] = InitEmptyProfile(profileData.name, profileData.sortKey, profileData.lastset)
-                        local newProfile = newData.profiles[profileId]
-
-                        for i = 1, lastNonEmptySkill do
-                            newProfile.skillbars[i] = ZO_DeepTableCopy(profileData.setdata[i].Skill)
-                        end
-                        for i = 1, lastNonEmptyGear do
-                            newProfile.gear[i] = ZO_DeepTableCopy(profileData.setdata[i].Gear)
-                        end
-                        for i = 1, lastNonEmptyBuild do
-                            newProfile.builds[i] = ZO_DeepTableCopy(profileData.setdata[i].Set)
-                        end
-
-                        -- If everything of a type was deleted, add at least 1 empty set
-                        if (lastNonEmptySkill == 0) then
-                            newProfile.skillbars[1] = {}
-                        end
-                        if (lastNonEmptyGear == 0) then
-                            newProfile.gear[1] = {}
-                        end
-                        if (lastNonEmptyBuild == 0) then
-                            newProfile.builds[1] = InitEmptyBuild(1)
-                        end
+                        newProfile.skillbars[i] = ZO_DeepTableCopy(profileData.setdata[i].Skill)
+                        newProfile.gear[i] = ZO_DeepTableCopy(profileData.setdata[i].Gear)
+                        newProfile.builds[i] = ZO_DeepTableCopy(profileData.setdata[i].Set)
                     end
                 end
             end

@@ -410,7 +410,7 @@ end
 
 
 -- AG.DrawMenu reveals or hides the menu when invoked
--- line is an array of boolean, which enables or disables a menu item
+-- line is an array of (mostly) booleans, which enables or disables a menu item
 function AG.DrawMenu(c, line)
     AG_PanelMenu:ToggleHidden()
     AG_PanelMenu:SetAnchor(3, c, 6, 0, 0)
@@ -4628,7 +4628,8 @@ function AG:Initialize()
     -- end
 
     -- New data structure since 8.0.0
-    AGD.MigrateData(true)
+    AGD.MigrateData()
+    -- TODO: dialog + delete empty
 
     -- Initialize profile structure
     if AGD.GetCharacter().profiles == nil then
