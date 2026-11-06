@@ -87,6 +87,7 @@ local function InitEmptyCharacter(name, numBuildButtons)
         profiles = {}, -- {[1] = {skillbars = {}, gear = {}, builds = {}}}
         currentProfileId = 1,
         characterName = name,
+        server = GetWorldName(),
         numBuildButtons = numBuildButtons or 16,
     }
 end
@@ -133,7 +134,6 @@ local function MigrateData(deleteEmpty)
     end
 
     local accTable = AGX2_Character.Default[GetUnitDisplayName("player")]
-    -- TODO: init if empty
 
     -- In-place migration for each known character: this is because we don't know the char IDs or names of the other megaserver
     for charIndex = 1, GetNumCharacters() do
@@ -293,6 +293,25 @@ local function GetNumProfiles()
     return NonContiguousCount(charTable.profiles)
 end
 AGD.GetNumProfiles = GetNumProfiles
+
+-- Returns {[charId] = true} when the character has the same recorded name as another character
+local function GetDuplicateNameCharIds(accName)
+    local accTable = GetAccountTable(accName)
+    local names = {}
+    local dupes = {}
+    for charId, charData in pairs(accTable) do
+        if (charData.charName) then
+            if (names[charData.charName]) then
+                dupes[charId] = true
+                dupes[names[charData.charName]] = true
+            else
+                names[charData.charName] = true
+            end
+        end
+    end
+    return dupes
+end
+AGD.GetDuplicateNameCharIds = GetDuplicateNameCharIds
 
 
 ---------------------------------------------------------------------

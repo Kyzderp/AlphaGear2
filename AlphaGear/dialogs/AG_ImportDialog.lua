@@ -43,12 +43,35 @@ local function SetUpCharacterDropdown(contentControl, accountName)
         SetUpProfileDropdown(contentControl, accountName, entry.charId)
     end
 
+    local currentCharacterEntry
+    local dupes = AGD.GetDuplicateNameCharIds()
+    local hasValidChars = false
+
     for charId, charData in pairs(AGX2_Character.Default[accountName]) do
-        local entry = ZO_ComboBox:CreateItemEntry(charData.characterName, OnCharSelected)
-        entry.charId = charId
-        combo:AddItem(entry, ZO_COMBOBOX_SUPRESS_UPDATE)
+        if (charData.characterName) then
+            local display = charData.characterName
+            if (dupes[charId]) then
+                display = string.format("%s (%s)", display, charData.server or "Unknown server")
+            end
+
+            local entry = ZO_ComboBox:CreateItemEntry(display, OnCharSelected)
+            entry.charId = charId
+            combo:AddItem(entry, ZO_COMBOBOX_SUPRESS_UPDATE)
+
+            hasValidChars = true
+            if (charId == GetCurrentCharacterId()) then
+                currentCharacterEntry = entry
+            end
+        else
+            AG.alwaysDbg("|cFF0000charId " .. charId .. " doesn't have a character name!")
+        end
     end
     combo:UpdateItems()
+    combo:SelectItem(currentCharacterEntry)
+
+    if (not hasValidChars) then
+        AG.msg("No valid characters found for " .. accountName .. ". You may need to log in to that account once to do the v8.0.0+ data migration.")
+    end
 end
 
 local function SetUpAccountDropdown(contentControl)
@@ -60,13 +83,19 @@ local function SetUpAccountDropdown(contentControl)
         SetUpCharacterDropdown(contentControl, entry.accName)
     end
 
+    local currentAccountEntry
     combo:ClearItems()
     for accName, _ in pairs(AGX2_Character.Default) do
         local entry = ZO_ComboBox:CreateItemEntry(accName, OnAccountSelected)
         entry.accName = accName
         combo:AddItem(entry, ZO_COMBOBOX_SUPRESS_UPDATE)
+
+        if (accName == GetUnitDisplayName("player")) then
+            currentAccountEntry = entry
+        end
     end
     combo:UpdateItems()
+    combo:SelectItem(currentAccountEntry)
 end
 
 
