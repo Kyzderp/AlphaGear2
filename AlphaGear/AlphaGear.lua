@@ -34,6 +34,7 @@ AG.MODE_BUILD = "Build"
 
 AG.MENU_TYPE_GEAR = 1
 AG.MENU_TYPE_SKILLS = 2
+AG.MENU_TYPE_PROFILE = 3 -- probably don't need, because the menu items are separate
 
 AG.account = {}
 AG.account_defaults = {
@@ -1143,8 +1144,7 @@ function AG.SetupMainPanel()
     AG_PanelUndressArmor.data = { info = L.Unequip }
     AG_PanelUndressAll.data = { info = L.UnequipAll }
     AG_PanelProfilePanelEditProfileButton.data = { info = "Edit profile properties" }
-    AG_PanelProfilePanelDeleteProfileButton.data = { info = "Delete the current profile" }
-    AG_PanelProfilePanelImportProfileButton.data = { info = "Import another profile" }
+    AG_PanelProfilePanelProfileActionsButton.data = { info = "More profile actions" }
     AG_PanelProfilePanelAddProfileButton.data = { info = "Create a new profile" }
     AG_PanelSetPanelScrollChildEditPanelSetGearPanelGearLock.data = { info = L.Lock }
 
@@ -3800,7 +3800,7 @@ end
 
 -- Executes a menu action
 -- nr: number of action to execute
--- 1: copy, 2: paste, 3: insert equipped, 4: clear, 5: deposit, 6: withdraw, 7: deposit profile, 8: withdraw profile, 9: delete bar
+-- 1: copy, 2: paste, 3: insert equipped, 4: clear, 5: delete bar, 6: deposit, 7: withdraw, 8: deposit profile, 9: withdraw profile, 10: reorder, 11: import, 12: delete profile
 function AG.MenuAction(nr)
     trace('MenuAction')
 
@@ -3889,6 +3889,15 @@ function AG.MenuAction(nr)
         if MENU.type == AG.MENU_TYPE_GEAR then
             AG.MoveGearSetAll(false)
         end
+    elseif (nr == 10) then
+        -- toggle reordering mode
+        AG.ToggleReorderMode()
+    elseif (nr == 11) then
+        -- import profile
+        AG.ShowImportDialog()
+    elseif (nr == 12) then
+        -- delete profile
+        AG.OnDeleteProfileClicked()
     end
 end
 
@@ -4396,6 +4405,25 @@ function AG.OnDeleteSkillbarClicked(index)
         UpdateSkillButtons(index)
         AG.UpdateEditPanel() -- TODO
     end)
+end
+
+function AG.OnProfileActionsClicked(button)
+    AG.DrawMenu(button, {
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+    })
+    -- MENU.nr = 1
+    -- MENU.type = AG.MENU_TYPE_PROFILE
 end
 
 ---------------------------------------------------------------------

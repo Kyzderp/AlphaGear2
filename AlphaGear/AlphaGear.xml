@@ -102,6 +102,24 @@
               <OnInitialized>self:SetText(AGLang.msg.FromBankAll)</OnInitialized>
               <OnClicked>AG.MenuAction(9)</OnClicked>
             </Button>
+            <Button name="$(parent)Button10" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Toggle reordering mode" hidden="true">
+              <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button9"/>
+              <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
+              <Dimensions x="230"/>
+              <OnClicked>AG.MenuAction(10)</OnClicked>
+            </Button>
+            <Button name="$(parent)Button11" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Import profile" hidden="true">
+              <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button10"/>
+              <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
+              <Dimensions x="230"/>
+              <OnClicked>AG.MenuAction(11)</OnClicked>
+            </Button>
+            <Button name="$(parent)Button12" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Delete profile" hidden="true">
+              <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button11"/>
+              <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
+              <Dimensions x="230"/>
+              <OnClicked>AG.MenuAction(12)</OnClicked>
+            </Button>
           </Controls>
         </Backdrop>
         <Backdrop name="$(parent)Icons" centerColor="598527" edgeColor="00000000" hidden="true" tier="2" inherits="ZO_ScrollContainerBase">
@@ -167,26 +185,17 @@
                 <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
             </Button>
 
-            <Button name="$(parent)DeleteProfileButton" clickSound="Click">
+            <Button name="$(parent)ProfileActionsButton" clickSound="Click">
                 <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)EditProfileButton" offsetX="2" />
                 <Dimensions y="35" x="35"/>
-                <Textures normal="/esoui/art/inventory/inventory_tabicon_trash_up.dds" pressed="/esoui/art/inventory/inventory_tabicon_trash_down.dds" mouseOver="/esoui/art/inventory/inventory_tabicon_trash_over.dds"/>
-                <OnClicked>AG.OnDeleteProfileClicked()</OnClicked>
-                <OnMouseEnter>AG.Tooltip(self,true)</OnMouseEnter>
-                <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
-            </Button>
-
-            <Button name="$(parent)ImportProfileButton" clickSound="Click">
-                <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)DeleteProfileButton" offsetX="2" />
-                <Dimensions y="35" x="35"/>
                 <Textures normal="esoui/art/buttons/edit_save_up.dds" pressed="esoui/art/buttons/edit_save_down.dds" mouseOver="esoui/art/buttons/edit_save_over.dds"/>
-                <OnClicked>AG.ShowImportDialog()</OnClicked>
+                <OnClicked>AG.OnProfileActionsClicked(self)</OnClicked>
                 <OnMouseEnter>AG.Tooltip(self,true)</OnMouseEnter>
                 <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
             </Button>
 
             <Button name="$(parent)AddProfileButton" clickSound="Click">
-                <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)ImportProfileButton" offsetX="2" />
+                <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)ProfileActionsButton" offsetX="2" />
                 <Dimensions y="35" x="35"/>
                 <Textures normal="esoui/art/buttons/plus_up.dds" pressed="esoui/art/buttons/plus_down.dds" mouseOver="esoui/art/buttons/plus_over.dds"/>
                 <OnClicked>AG.OnAddNewProfileClicked()</OnClicked>
