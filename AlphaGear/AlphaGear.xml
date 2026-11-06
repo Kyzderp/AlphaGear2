@@ -189,7 +189,7 @@
                 <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)EditProfileButton" offsetX="2" />
                 <Dimensions y="35" x="35"/>
                 <Textures normal="esoui/art/buttons/edit_save_up.dds" pressed="esoui/art/buttons/edit_save_down.dds" mouseOver="esoui/art/buttons/edit_save_over.dds"/>
-                <OnClicked>AG.OnProfileActionsClicked(self)</OnClicked>
+                <OnMouseDown>AG.OnProfileActionsClicked(self)</OnMouseDown>
                 <OnMouseEnter>AG.Tooltip(self,true)</OnMouseEnter>
                 <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
             </Button>
@@ -694,7 +694,7 @@
 
     <Button name="AG_MoveUpButton_Template" clickSound="Click" virtual="true">
       <Dimensions x="16" y="16"/>
-      <Textures normal="esoui/art/buttons/scrollbox_uparrow_up.dds" pressed="esoui/art/buttons/scrollbox_uparrow_down.dds" mouseOver="esoui/art/buttons/scrollbox_uparrow_over.dds"/>
+      <Textures normal="esoui/art/buttons/scrollbox_uparrow_up.dds" pressed="esoui/art/buttons/scrollbox_uparrow_down.dds" mouseOver="esoui/art/buttons/scrollbox_uparrow_over.dds" disabled="esoui/art/buttons/scrollbox_uparrow_up_disabled.dds"/>
       <OnMouseDown>
         AG.OnMoveUpClicked(self.mode, self.index)
       </OnMouseDown>
@@ -702,7 +702,7 @@
 
     <Button name="AG_MoveDownButton_Template" clickSound="Click" virtual="true">
       <Dimensions x="16" y="16"/>
-      <Textures normal="esoui/art/buttons/scrollbox_downarrow_up.dds" pressed="esoui/art/buttons/scrollbox_downarrow_down.dds" mouseOver="esoui/art/buttons/scrollbox_downarrow_over.dds"/>
+      <Textures normal="esoui/art/buttons/scrollbox_downarrow_up.dds" pressed="esoui/art/buttons/scrollbox_downarrow_down.dds" mouseOver="esoui/art/buttons/scrollbox_downarrow_over.dds" disabled="esoui/art/buttons/scrollbox_downarrow_up_disabled.dds"/>
       <OnMouseDown>
         AG.OnMoveDownClicked(self.mode, self.index)
       </OnMouseDown>

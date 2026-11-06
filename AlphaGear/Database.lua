@@ -115,15 +115,15 @@ local function CleanZeroes(profile)
     AG.alwaysDbg("Cleaned out " .. numCleaned .. " zeroes from profile " .. profile.name)
 end
 
-local function CleanAllZeroes()
-    for _, profile in pairs(AGD.GetCharacter().profiles) do
+local function CleanAllZeroes(charId)
+    local accTable = AGD.GetAccountTable()
+    for _, profile in pairs(accTable[charId].profiles) do
         CleanZeroes(profile)
     end
 end
 AGD.CleanAllZeroes = CleanAllZeroes
 
-local function DeleteNonContiguous()
-    local profiles = AGD.GetCharacter().profiles
+local function DeleteNonContiguous(profiles)
     for profileId, profileData in pairs(profiles) do
         -- We want to remove the last x empty sets of each type, e.g. if there's gear in only slots 1 and 4, we can remove everything from 5 onward
         local lastNonEmptySkill = 0
@@ -200,7 +200,16 @@ local function DeleteNonContiguous()
         end
     end
 end
-AGD.DeleteNonContiguous = DeleteNonContiguous
+
+local function DeleteAllNonContiguous()
+    for charId, charData in pairs(AGD.GetAccountTable()) do
+        if (charData.profiles) then
+            DeleteNonContiguous(charData.profiles)
+        end
+    end
+end
+AGD.DeleteAllNonContiguous = DeleteAllNonContiguous
+-- /script AlphaGearDatabase.DeleteAllNonContiguous()
 
 local function MigrateData()
     if (not AGX2_Character) then
@@ -252,7 +261,7 @@ local function MigrateData()
             accTable[charId] = newData
             accTable[name] = nil
 
-            CleanAllZeroes()
+            CleanAllZeroes(charId)
         elseif (not accTable[charId]) then
             -- Nothing to migrate, just create empty
             accTable[charId] = InitEmptyCharacter(name)
@@ -341,6 +350,7 @@ AGD.GetDuplicateNameCharIds = GetDuplicateNameCharIds
 -- Update all builds that link to gear or skillbars that have changed
 -- func params: (oldValue) should return: newValue
 local function UpdateBuildLinks(gearFunc, skillbarFunc)
+    local profileTable = GetProfileTable(profileId)
     for _, buildData in pairs(profileTable.builds) do
         if (gearFunc) then
             buildData.gear = gearFunc(buildData.gear)
@@ -467,6 +477,7 @@ AGD.DeleteSkillbar = DeleteSkillbar
 -- Reordering
 ---------------------------------------------------------------------
 local function ReorderBuild(index, offset)
+    local profileTable = GetProfileTable()
     local build = table.remove(#profileTable.builds, index)
     table.insert(profileTable.builds, index + offset, build)
 end
@@ -474,8 +485,9 @@ AGD.ReorderBuild = ReorderBuild
 
 -- Reorder gear set and update any builds that link to either affected gear
 local function ReorderGear(index, offset)
+    local profileTable = GetProfileTable()
     local newIndex = index + offset
-    local gear = table.remove(#profileTable.gear, index)
+    local gear = table.remove(profileTable.gear, index)
     table.insert(profileTable.gear, newIndex, gear)
 
     -- Swap the linked
@@ -491,8 +503,9 @@ AGD.ReorderGear = ReorderGear
 
 -- Reorder skillbar and update any builds that link to either affected skillbar
 local function ReorderSkillbar(index, offset)
+    local profileTable = GetProfileTable()
     local newIndex = index + offset
-    local skillbar = table.remove(#profileTable.skillbars, index)
+    local skillbar = table.remove(profileTable.skillbars, index)
     table.insert(profileTable.skillbars, newIndex, skillbar)
 
     -- Swap the linked

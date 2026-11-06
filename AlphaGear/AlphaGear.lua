@@ -206,12 +206,12 @@ local function alwaysDbg(fmt, ...)
 end
 AG.alwaysDbg = alwaysDbg
 
-local function msg(msg)
-    if (not msg) then return end
-    msg = "[AG2] " .. tostring(msg)
+local function msg(text)
+    if (not text) then return end
+    text = "[AG2] " .. tostring(text)
     if (CHAT_ROUTER) then
-        CHAT_ROUTER:AddSystemMessage(msg)
-    else
+        CHAT_ROUTER:AddSystemMessage(text)
+    end
 end
 AG.msg = msg
 
@@ -887,6 +887,9 @@ local function DrawSkillBarButtons(nr)
                     false,
                     false,
                     false,
+                    false,
+                    false,
+                    false,
                 })
                 MENU.nr = nr
                 MENU.type = AG.MENU_TYPE_SKILLS
@@ -971,6 +974,9 @@ local function DrawGearBarButtons(nr)
                     isBanking,
                     isBanking,
                     isBanking,
+                    false,
+                    false,
+                    false,
                 })
                 MENU.nr = nr
                 MENU.type = AG.MENU_TYPE_GEAR
@@ -1256,10 +1262,10 @@ function AG.GetSetIcon(nr,bar)
         [WEAPONTYPE_SHIELD] = 'shield'
     }
     if bar == 1 then
-        if gear[2].link ~= 0 then endicon = icon[GetItemLinkWeaponType(gear[2].link)]
+        if IsNonEmpty(gear[2]) and IsNonEmpty(gear[2].link) then endicon = icon[GetItemLinkWeaponType(gear[2].link)]
         else endicon = icon[GetItemLinkWeaponType(gear[1].link)] end
     else
-        if gear[4].link ~= 0 then endicon = icon[GetItemLinkWeaponType(gear[4].link)]
+        if IsNonEmpty(gear[4]) and IsNonEmpty(gear[4].link) then endicon = icon[GetItemLinkWeaponType(gear[4].link)]
         else endicon = icon[GetItemLinkWeaponType(gear[3].link)] end
     end
     if endicon then return 'AlphaGear/asset/'..endicon..'.dds' else return nil end
@@ -4196,6 +4202,8 @@ function AG.LoadProfile(profileId)
         return
     end
 
+    AG.TurnOffReorderMode()
+
     if (not profileId) then
         -- nil profileId means we're refreshing the page after creating/deleting sets
     else
@@ -4435,8 +4443,10 @@ local downKeys = {}
 local downControls = {}
 
 local function CreateMoveUpControl(parent, mode, index, enabled)
+    local parentControl = WM:GetControlByName(parent)
     local control, key = moveUpControlPool:AcquireObject()
-    control:SetAnchor(BOTTOMLEFT, parent, LEFT, 5, -2)
+    control:SetParent(parentControl)
+    control:SetAnchor(TOPLEFT, parentControl, TOPLEFT, 0, 0)
     control.mode = mode
     control.index = index
     control:SetEnabled(enabled)
@@ -4445,8 +4455,10 @@ local function CreateMoveUpControl(parent, mode, index, enabled)
 end
 
 local function CreateMoveDownControl(parent, mode, index, enabled)
+    local parentControl = WM:GetControlByName(parent)
     local control, key = moveDownControlPool:AcquireObject()
-    control:SetAnchor(TOPLEFT, parent, LEFT, 5, 2)
+    control:SetParent(parentControl)
+    control:SetAnchor(TOPLEFT, parentControl, TOPLEFT, 0, 18)
     control.mode = mode
     control.index = index
     control:SetEnabled(enabled)
@@ -4455,25 +4467,24 @@ local function CreateMoveDownControl(parent, mode, index, enabled)
 end
 
 -- Swap the buttons' indices and enabled state when 2 lines are swapped
-local function SwapButtonIndices(keysTable, controlsTable, mode, index1, index2)
+local function SwapButtonIndices(keysTable, controlsTable, mode, index1, index2, enableFunc)
     local key1 = keysTable[mode .. index1]
     local control1 = controlsTable[key1]
 
     local key2 = keysTable[mode .. index2]
     local control2 = controlsTable[key2]
 
-    keysTable[mode .. index1] = control2
-    keysTable[mode .. index2] = control1
+    keysTable[mode .. index1] = key2
+    keysTable[mode .. index2] = key1
     control1.index = index2
     control2.index = index1
-    local tempEnabled = control1:IsEnabled()
-    control1:SetEnabled(control2:IsEnabled())
-    control2:SetEnabled(tempEnabled)
+    control1:SetEnabled(enableFunc(index2))
+    control2:SetEnabled(enableFunc(index1))
 end
 
-local function SwapButtons(mode, index1, index2)
-    SwapButtonIndices(upKeys, upControls, mode, index1, index2)
-    SwapButtonIndices(downKeys, downControls, mode, index1, index2)
+local function SwapButtons(mode, index1, index2, maxIndex)
+    SwapButtonIndices(upKeys, upControls, mode, index1, index2, function(index) return index > 1 end)
+    SwapButtonIndices(downKeys, downControls, mode, index1, index2, function(index) return index < maxIndex end)
 end
 
 function AG.ToggleReorderMode()
@@ -4505,54 +4516,70 @@ function AG.ToggleReorderMode()
 
         for i = 1, #profile.gear do
             CreateMoveUpControl("AG_Selector_Gear_" .. i, AG.MODE_GEAR, i, i > 1)
-            CreateMoveDownControl("AG_Selector_Gear_" .. i, AG.MODE_GEAR, i, i < (#profile.builds))
+            CreateMoveDownControl("AG_Selector_Gear_" .. i, AG.MODE_GEAR, i, i < (#profile.gear))
         end
 
         for i = 1, #profile.skillbars do
             CreateMoveUpControl("AG_Selector_Skill_" .. i, AG.MODE_SKILL, i, i > 1)
-            CreateMoveDownControl("AG_Selector_Skill_" .. i, AG.MODE_SKILL, i, i < (#profile.builds))
+            CreateMoveDownControl("AG_Selector_Skill_" .. i, AG.MODE_SKILL, i, i < (#profile.skillbars))
         end
     end
 end
 
+function AG.TurnOffReorderMode()
+    if (reordering) then
+        AG.ToggleReorderMode()
+    end
+end
+
 function AG.OnMoveUpClicked(mode, index)
+    local profile = AGD.GetProfile()
+    local maxIndex
     if (mode == AG.MODE_BUILD) then
         AGD.ReorderBuild(index, -1)
         AG.HideEditPanel()
         AG.UpdateUI(index - 1, index)
+        maxIndex = #profile.builds
     elseif (mode == AG.MODE_GEAR) then
         AGD.ReorderGear(index, -1)
         UpdateGearButtons(index - 1, index)
         AG.UpdateEditPanel()
+        maxIndex = #profile.gear
     elseif (mode == AG.MODE_SKILL) then
         AGD.ReorderSkillbar(index, -1)
         UpdateSkillButtons(index - 1, index)
         AG.UpdateEditPanel()
+        maxIndex = #profile.skillbars
     else
         d("|cFF0000No mode specified???")
         return
     end
-    SwapButtons(mode, index - 1, index)
+    SwapButtons(mode, index - 1, index, maxIndex)
 end
 
 function AG.OnMoveDownClicked(mode, index)
+    local profile = AGD.GetProfile()
+    local maxIndex
     if (mode == AG.MODE_BUILD) then
         AGD.ReorderBuild(index, 1)
         AG.HideEditPanel()
         AG.UpdateUI(index, index + 1)
+        maxIndex = #profile.builds
     elseif (mode == AG.MODE_GEAR) then
         AGD.ReorderGear(index, 1)
         UpdateGearButtons(index, index + 1)
         AG.UpdateEditPanel()
+        maxIndex = #profile.gear
     elseif (mode == AG.MODE_SKILL) then
         AGD.ReorderSkillbar(index, 1)
         UpdateSkillButtons(index, index + 1)
         AG.UpdateEditPanel()
+        maxIndex = #profile.skillbars
     else
         d("|cFF0000No mode specified???")
         return
     end
-    SwapButtons(mode, index, index + 1)
+    SwapButtons(mode, index, index + 1, maxIndex)
 end
 
 
