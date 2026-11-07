@@ -13,15 +13,15 @@ local function ConfirmCallback(dialog)
     dialog.data[1]()
 end
 
-function AGConfirmDlg.Show(name, callback)
-    ZO_Dialogs_ShowDialog("AG_CONFIRM_DIALOG", {callback}, {mainTextParams = {name}})
+function AGConfirmDlg.Show(text, callback)
+    ZO_Dialogs_ShowDialog("AG_CONFIRM_DIALOG", {callback}, {mainTextParams = {text}})
 end
 
 function AGConfirmDlg.Initialize()
     ESO_Dialogs["AG_CONFIRM_DIALOG"] = {
         title = {text = "Confirm Deletion"},
         mainText = {
-            text = "Really delete <<1>>?",
+            text = "<<1>>",
         },
         setup = function() end,
         buttons =

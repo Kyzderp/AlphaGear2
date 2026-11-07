@@ -209,13 +209,11 @@ end
 
 --
 function AG.getNumberOfVisibleSetButtons()
-	if (AGD) then return AGD.GetCurrentProfileTable().numBuildButtons end
-	return AG.setdata.setamount
+	return AGD.GetCharacter().numBuildButtons
 end
 
 function AG.setNumberOfVisibleSetButtons(value)
-	AG.setdata.setamount = value 
-	if (AGD) then AGD.GetCurrentProfileTable().numBuildButtons = value end
+	AGD.GetCharacter().numBuildButtons = value
 	AG.DrawSetButtonsUI()
 end
 --
@@ -283,7 +281,8 @@ function AG:CreateSettingsPage()
 			min = 0, max = 16, step = 1, 
 			getFunc = AG.getNumberOfVisibleSetButtons,
 			setFunc = AG.setNumberOfVisibleSetButtons,
-			default = AG.setdata_defaults.setamount, 
+			default = AG.setdata_defaults.setamount,
+			disabled = function() return not AG.isShowSetButtons() end,
 		},
 		
 		{

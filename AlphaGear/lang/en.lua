@@ -44,7 +44,7 @@ AGLang.msg = {
 	-- new since 6.1.1
 	SetsHeader = 'Profiles/Builds',
 	SettingsDesc = 'Configure AlphaGear UI, Auto-Repair and Auto-Recharge.',
-	NumVisibleSetButtons = 'Number of Build Buttons to Show',
+	NumVisibleSetButtons = 'Number of build buttons to show',
 	GearHeader = 'Gear',
 	WeaponsHeader = 'Weapons',
 	EquipmentHeader = 'Equipment Panel',

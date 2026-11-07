@@ -3,8 +3,8 @@
 Dialog to import from other servers, accounts, or characters
 
 --]]
-
 AGImportDlg = {}
+local AGD = AlphaGearDatabase
 
 
 ------------------------------------------------------
@@ -16,8 +16,11 @@ local function SetUpProfileDropdown(contentControl, accountName, charId)
     local comboParent = contentControl:GetNamedChild("ProfileDropdown")
     local combo = ZO_ComboBox_ObjectFromContainer(comboParent)
 
+    if (not accountName or not charId) then
+        asdfdfsf()
+        return
+    end
     combo:ClearItems()
-    if (not accountName or not charId) then return end
 
     local function OnProfileSelected(_, _, entry)
         selectedProfile = entry.profile
@@ -35,8 +38,10 @@ local function SetUpCharacterDropdown(contentControl, accountName)
     local comboParent = contentControl:GetNamedChild("CharacterDropdown")
     local combo = ZO_ComboBox_ObjectFromContainer(comboParent)
 
-    combo:ClearItems()
-    if (not accountName) then return end
+    if (not accountName) then
+        asdfdfsf()
+        return
+    end
 
     local function OnCharSelected(_, _, entry)
         selectedCharacter = entry.charId
@@ -47,7 +52,8 @@ local function SetUpCharacterDropdown(contentControl, accountName)
     local dupes = AGD.GetDuplicateNameCharIds()
     local hasValidChars = false
 
-    for charId, charData in pairs(AGX2_Character.Default[accountName]) do
+    combo:ClearItems()
+    for charId, charData in pairs(AGD.GetAccountTable(accountName)) do
         if (charData.characterName) then
             local display = charData.characterName
             if (dupes[charId]) then
@@ -62,12 +68,13 @@ local function SetUpCharacterDropdown(contentControl, accountName)
             if (charId == GetCurrentCharacterId()) then
                 currentCharacterEntry = entry
             end
+            AG.alwaysDbg("adding " .. charId .. " " .. display)
         else
             AG.alwaysDbg("|cFF0000charId " .. charId .. " doesn't have a character name!")
         end
     end
-    combo:UpdateItems()
     combo:SelectItem(currentCharacterEntry)
+    combo:UpdateItems()
 
     if (not hasValidChars) then
         AG.msg("No valid characters found for " .. accountName .. ". You may need to log in to that account once to do the v8.0.0+ data migration.")
@@ -94,8 +101,9 @@ local function SetUpAccountDropdown(contentControl)
             currentAccountEntry = entry
         end
     end
-    combo:UpdateItems()
     combo:SelectItem(currentAccountEntry)
+    combo:UpdateItems()
+    -- SetUpCharacterDropdown(contentControl, GetUnitDisplayName("player"))
 end
 
 
@@ -110,8 +118,8 @@ local function SetUp()
     local control = AGImportDialog
 
     SetUpAccountDropdown(GetControl(control, "Content"))
-    SetUpCharacterDropdown(GetControl(control, "Content"))
-    SetUpProfileDropdown(GetControl(control, "Content"))
+    -- SetUpCharacterDropdown(GetControl(control, "Content"))
+    -- SetUpProfileDropdown(GetControl(control, "Content"))
 end
 
 

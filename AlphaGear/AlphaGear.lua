@@ -1178,14 +1178,16 @@ end
 
 
 --- Draws the set selection panel
--- Number of visible buttons is determined by "numBuildButtons"
+-- Number of visible buttons is determined by "maxNumBuildButtons"
+local maxSetButtonsCreated = 0
 function AG.DrawSetButtonsUI()
     trace ("DrawSetButtonsUI")
 
     local xpos, ypos, c = 0, 27, nil
-    local numBuildButtons = AGD.GetCharacter().numBuildButtons
+    local maxNumBuildButtons = AGD.GetCharacter().numBuildButtons
     local profile = AGD.GetProfile()
-    for x = 1, #profile.builds do -- TODO: check if this is properly updated
+    local numPerRow = math.ceil(math.min(maxNumBuildButtons, #profile.builds) / 2)
+    for x = 1, #profile.builds do
         c = WM:GetControlByName('AG_UI_SetButton_'..x)
         if not c then
             c = WM:CreateControl('AG_UI_SetButton_'..x, AG_SetButtonFrame, CT_BUTTON)
@@ -1202,12 +1204,22 @@ function AG.DrawSetButtonsUI()
             c:SetHandler('OnMouseEnter',function(self) AG.TooltipSet(x,true) end)
             c:SetHandler('OnMouseExit',function(self) AG.TooltipSet(x,false) end)
             c:SetHandler('OnClicked',function(self) AG.LoadSet(x) end)
+
+            if (x > maxSetButtonsCreated) then maxSetButtonsCreated = x end
         end
         c:ClearAnchors()
         c:SetAnchor(3,AG_SetButtonFrame,3,xpos,ypos)
-        if x > numBuildButtons then c:SetHidden(true) else c:SetHidden(false) end
-        if x == math.ceil(numBuildButtons/2) then ypos = ypos + 29; xpos = 0
-        else xpos = xpos + 29 end
+        c:SetHidden(x > maxNumBuildButtons)
+        if x == numPerRow then
+            ypos = ypos + 29
+            xpos = 0
+        else
+            xpos = xpos + 29
+        end
+    end
+    for x = #profile.builds + 1, maxSetButtonsCreated do
+        c = WM:GetControlByName('AG_UI_SetButton_'..x)
+        c:SetHidden(true)
     end
 end
 
@@ -2459,6 +2471,10 @@ function AG.UpdateSetButtons()
         profileLabel = "Unknown"
     end
     AG_SetButtonFrameProfileName:SetText(profileLabel)
+
+    if (AG.isShowSetButtons()) then
+        AG.DrawSetButtonsUI()
+    end
 end
 
 -- Looks through bag for updated item links (maybe because of gear improvements or enchants?)
@@ -3996,17 +4012,18 @@ function AG.TooltipSet(nr,visible)
         for z = 1,2 do
             local ico = ''
             for x = 1,6 do
+                val = 'AlphaGear/asset/grey1.dds'
                 local linkedSkillbar = set.skill[z]
-                local skillId = AGD.GetProfile().skillbars[linkedSkillbar][x]
-                if linkedSkillbar > 0 and skillId ~= 0 then
-                    val = GetAbilityTexture(skillId)
-                else
-                    val = 'AlphaGear/asset/grey1.dds'
+                if (IsNonEmpty(linkedSkillbar)) then
+                    local skillbar = AGD.GetProfile().skillbars[linkedSkillbar]
+                    if (IsNonEmpty(skillbar) and IsNonEmpty(skillbar[x])) then
+                        val = GetAbilityTexture(skillbar[x])
+                    end
                 end
                 ico = ico..'|t36:36:'..val..'|t '
             end
             WM:GetControlByName('AG_SetTipBar'..z..'Skills'):SetText(ico)
-            if set.gear ~= 0 then
+            if IsNonEmpty(set.gear) then
                 val = Zero(set.icon[z]) or AG.GetSetIcon(set.gear,z)
             else
                 val = 'AlphaGear/asset/nothing.dds'
@@ -4111,9 +4128,10 @@ local function GetCharNames()
 end
 
 local function ImportProfile(accountName, charId, profileId)
-    local otherProfile = AGD.GetAccountTable()[charId].profiles[profileId] -- TODO: what if other account isn't migrated?
+    local otherChar = AGD.GetAccountTable(accountName)[charId]
+    local otherProfile = otherChar.profiles[profileId] -- TODO: what if other account isn't migrated?
     local currentProfile = AGD.GetProfile()
-    msg(zo_strformat("Importing profile <<1>> (<<2>>) from <<3>> <<4>>...", otherProfile.name, profileIds, accountName, charId))
+    msg(zo_strformat("Importing profile <<1>> (<<2>>) from <<3>> <<4>> (<<5>>)", otherProfile.name, profileId, accountName, otherChar.characterName, charId))
 
     for index = 1, #currentProfile.gear do
         AG.handlePreChangeGearSetItems(index)
@@ -4339,7 +4357,7 @@ function AG.OnDeleteProfileClicked()
         return
     end
 
-    AGConfirmDlg.Show("profile " .. tostring(AGD.GetProfile().name), function()
+    AGConfirmDlg.Show("Really delete profile " .. tostring(AGD.GetProfile().name) .. "?", function()
         AGD.DeleteProfile()
         AG.LoadProfile(GetSortedProfileIds()[1])
     end)
@@ -4364,7 +4382,7 @@ function AG.OnDeleteBuildClicked(index)
         name = "Build " .. index
     end
 
-    AGConfirmDlg.Show(name, function()
+    AGConfirmDlg.Show("Really delete " .. name .. "?", function()
         AGD.DeleteBuild(index)
         msg("Removed build \"" .. name .. "\"")
         DrawSets()
@@ -4385,7 +4403,7 @@ function AG.OnDeleteGearClicked(index)
         return
     end
 
-    AGConfirmDlg.Show("gear set " .. index, function()
+    AGConfirmDlg.Show("Really delete gear set " .. index .. "?", function()
         AGD.DeleteGear(index)
         msg(zo_strformat("Removed gear set <<1>>", index))
         DrawSets()
@@ -4406,7 +4424,7 @@ function AG.OnDeleteSkillbarClicked(index)
         return
     end
 
-    AGConfirmDlg.Show("skillbar " .. index, function()
+    AGConfirmDlg.Show("Really delete skillbar " .. index .. "?", function()
         local removedIndex = AGD.DeleteSkillbar(index)
         msg(zo_strformat("Removed skillbar <<1>>", removedIndex))
         DrawSets()
@@ -4584,6 +4602,23 @@ end
 
 
 ---------------------------------------------------------------------
+-- Misc
+---------------------------------------------------------------------
+local function AskDeleteNonContiguous()
+    AGConfirmDlg.Show(
+        "AlphaGear 2 v8.0.0 and later revamps the way your builds are stored to be more efficient. You can now have a dynamic number of profiles, builds, gear sets, and skillbars; this means the saved variables no longer need to store extra empty information. Completely empty profiles have already been removed.\n\nWould you like to delete all trailing empty builds, gear sets, and skillbars now? Empty sets that come before non-empty sets will not be affected.\n\nYou can also do this later from the AlphaGear 2 addon settings.",
+        function()
+            AGD.DeleteAllNonContiguous()
+            DrawSets()
+            AG.HideEditPanel()
+            AG.UpdateUI()
+        end
+    )
+end
+AG.AskDeleteNonContiguous = AskDeleteNonContiguous
+
+
+---------------------------------------------------------------------
 -- Init
 ---------------------------------------------------------------------
 function AG:Initialize()
@@ -4626,49 +4661,14 @@ function AG:Initialize()
         AG.account.Integrations = {table.unpack(AG.account_defaults.Integrations)}
     end
 
-
-    -- initialize character wide settings
-
-    -- Post-Load Check for missing members
-    -- for x = 1, MAXSLOT do
-    --     -- new since 6.2.0
-    --     -- Outfit-ID
-    --     if AGD.GetProfile().builds[x].outfit == nil then
-    --         AGD.GetProfile().builds[x].outfit = AG.OUTFIT_KEEP
-    --     end
-
-    --     -- Slot for Poison
-    --     if AGD.GetProfile().gear[x][15] == nil then
-    --         AGD.GetProfile().gear[x][15] = { id = 0, link = 0 }
-    --     end
-
-    --     -- Slot for BackupPoison
-    --     if AGD.GetProfile().gear[x][16] == nil then
-    --         AGD.GetProfile().gear[x][16] = { id = 0, link = 0 }
-    --     end
-    --     -- end new since 6.2.0
-    --     -- new since 6.3.0
-    --     for z = 1, 6 do
-    --         AG.CheckSkillId (x, z)
-    --     end
-    --     -- end new since 6.3.0
-    -- end
-
     -- New data structure since 8.0.0
     AGD.MigrateData()
     -- TODO: dialog + delete empty
 
-    -- Initialize profile structure
-    if AGD.GetCharacter().profiles == nil then
-        AGD.GetCharacter().currentProfileId = 1
-        AGD.GetCharacter().profiles = {
-            [1] = {
-                name = "Profile 1",
-                currentBuild = 1
-            }
-        }
+    if (not AG.account.askedDelete) then
+        AG.account.askedDelete = true
+        EM:RegisterForEvent(AG.name .. "PlayerActivatedAskDelete", EVENT_PLAYER_ACTIVATED, AskDeleteNonContiguous, true)
     end
-
 
 
     -- initialize settings page

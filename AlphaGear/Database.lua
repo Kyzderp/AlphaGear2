@@ -55,11 +55,12 @@ AGD.IsProfileEmpty = IsProfileEmpty
 -- Migration
 ---------------------------------------------------------------------
 -- Adds 1 build, 1 gear, and 2 skillbars to a profile
-local function PopulateNewProfile(profileId)
-    AGD.CreateBuild(profileId)
-    AGD.CreateGear(profileId)
-    AGD.CreateSkillbar(profileId)
-    AGD.CreateSkillbar(profileId)
+-- If profile is defined, populates that instead of fetching current character's profileId
+local function PopulateNewProfile(profileId, profile)
+    AGD.CreateBuild(profileId, profile)
+    AGD.CreateGear(profileId, profile)
+    AGD.CreateSkillbar(profileId, profile)
+    AGD.CreateSkillbar(profileId, profile)
 end
 
 local function InitEmptyBuild(index)
@@ -199,14 +200,28 @@ local function DeleteNonContiguous(profiles)
             end
         end
     end
+
+    -- Add 1 profile if all have been deleted
+    if (NonContiguousCount(profiles) == 0) then
+        profiles[1] = InitEmptyProfile("Profile 1")
+        PopulateNewProfile(1, profiles[1])
+    end
 end
 
 local function DeleteAllNonContiguous()
     for charId, charData in pairs(AGD.GetAccountTable()) do
-        if (charData.profiles) then
+        if (charData.characterName) then
             DeleteNonContiguous(charData.profiles)
+
+            -- If the currently selected profile no longer exists, just pick the first one found
+            if (not charData.profiles[charData.currentProfileId]) then
+                AGD.alwaysDbg(charData.currentProfileId .. " no longer a profile in " .. charData.characterName)
+                charData.currentProfileId = next(charData.profiles)
+                AGD.alwaysDbg("currentProfileId now " .. charData.currentProfileId)
+            end
         end
     end
+    -- TODO: update UI
 end
 AGD.DeleteAllNonContiguous = DeleteAllNonContiguous
 -- /script AlphaGearDatabase.DeleteAllNonContiguous()
@@ -268,7 +283,7 @@ local function MigrateData()
             local newCharTable = accTable[charId]
             newCharTable.profiles[1] = InitEmptyProfile(1)
             newCharTable.currentProfileId = 1
-            PopulateNewProfile(1)
+            PopulateNewProfile(1, newCharTable.profiles[1])
         end
     end
 end
@@ -400,8 +415,8 @@ end
 AGD.DeleteProfile = DeleteProfile
 
 -- Initializes values in new build. Builds are always contiguous
-local function CreateBuild(profileId)
-    local profileTable = GetProfileTable(profileId)
+local function CreateBuild(profileId, profile)
+    local profileTable = profile or GetProfileTable(profileId)
     table.insert(profileTable.builds, InitEmptyBuild(#profileTable.builds + 1))
 end
 AGD.CreateBuild = CreateBuild
@@ -415,11 +430,9 @@ end
 AGD.DeleteBuild = DeleteBuild
 
 -- Initializes values in new gear set. Gear is always contiguous
-local function CreateGear(profileId)
-    local profileTable = GetProfileTable(profileId)
-    table.insert(profileTable.gear, {
-        -- TODO: do 1~16 need to be inited or is nil ok?
-    })
+local function CreateGear(profileId, profile)
+    local profileTable = profile or GetProfileTable(profileId)
+    table.insert(profileTable.gear, {})
 end
 AGD.CreateGear = CreateGear
 
@@ -444,11 +457,9 @@ end
 AGD.DeleteGear = DeleteGear
 
 -- Initializes values in new skillbar. Skillbars are always contiguous
-local function CreateSkillbar(profileId)
-    local profileTable = GetProfileTable(profileId)
-    table.insert(profileTable.skillbars, {
-        -- TODO: do 1~6 need to be inited or is nil ok?
-    })
+local function CreateSkillbar(profileId, profile)
+    local profileTable = profile or GetProfileTable(profileId)
+    table.insert(profileTable.skillbars, {})
 end
 AGD.CreateSkillbar = CreateSkillbar
 

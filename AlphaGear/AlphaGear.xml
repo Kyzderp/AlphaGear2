@@ -189,7 +189,8 @@
                 <Anchor point="RIGHT" relativePoint="LEFT" relativeTo="$(parent)EditProfileButton" offsetX="2" />
                 <Dimensions y="35" x="35"/>
                 <Textures normal="esoui/art/buttons/edit_save_up.dds" pressed="esoui/art/buttons/edit_save_down.dds" mouseOver="esoui/art/buttons/edit_save_over.dds"/>
-                <OnMouseDown>AG.OnProfileActionsClicked(self)</OnMouseDown>
+                <MouseButton button="2" enabled="true"/>
+                <OnClicked>d("asdf") AG.OnProfileActionsClicked(self)</OnClicked>
                 <OnMouseEnter>AG.Tooltip(self,true)</OnMouseEnter>
                 <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
             </Button>
