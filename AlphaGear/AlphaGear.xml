@@ -71,54 +71,72 @@
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button4"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText("Delete set")</OnInitialized>
+              <OnInitialized>self:SetText(AGLang.msg.ToBank)</OnInitialized>
               <OnClicked>AG.MenuAction(5)</OnClicked>
             </Button>
             <Button name="$(parent)Button6" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button5"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText(AGLang.msg.ToBank)</OnInitialized>
+              <OnInitialized>self:SetText(AGLang.msg.FromBank)</OnInitialized>
               <OnClicked>AG.MenuAction(6)</OnClicked>
             </Button>
             <Button name="$(parent)Button7" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button6"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText(AGLang.msg.FromBank)</OnInitialized>
+              <OnInitialized>self:SetText(AGLang.msg.ToBankAll)</OnInitialized>
               <OnClicked>AG.MenuAction(7)</OnClicked>
             </Button>
             <Button name="$(parent)Button8" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button7"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText(AGLang.msg.ToBankAll)</OnInitialized>
+              <OnInitialized>self:SetText(AGLang.msg.FromBankAll)</OnInitialized>
               <OnClicked>AG.MenuAction(8)</OnClicked>
             </Button>
-            <Button name="$(parent)Button9" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
+            <!-- Up to 8 is pre-8.0.0. Don't want to touch that too much, so all following are new and are reused -->
+            <Button name="$(parent)Button9" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Button 9" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button8"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
-              <OnInitialized>self:SetText(AGLang.msg.FromBankAll)</OnInitialized>
               <OnClicked>AG.MenuAction(9)</OnClicked>
             </Button>
-            <Button name="$(parent)Button10" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Toggle reordering mode" hidden="true">
+            <Button name="$(parent)Button10" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Button 10" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button9"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
               <OnClicked>AG.MenuAction(10)</OnClicked>
             </Button>
-            <Button name="$(parent)Button11" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Import profile" hidden="true">
+            <Button name="$(parent)Button11" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Button 11" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button10"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
               <OnClicked>AG.MenuAction(11)</OnClicked>
             </Button>
-            <Button name="$(parent)Button12" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Delete profile" hidden="true">
+            <Button name="$(parent)Button12" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Button 12" hidden="true">
               <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button11"/>
               <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
               <Dimensions x="230"/>
               <OnClicked>AG.MenuAction(12)</OnClicked>
+            </Button>
+            <Button name="$(parent)Button13" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Button 13" hidden="true">
+              <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button12"/>
+              <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
+              <Dimensions x="230"/>
+              <OnClicked>AG.MenuAction(13)</OnClicked>
+            </Button>
+            <Button name="$(parent)Button14" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Button 14" hidden="true">
+              <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button13"/>
+              <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
+              <Dimensions x="230"/>
+              <OnClicked>AG.MenuAction(14)</OnClicked>
+            </Button>
+            <Button name="$(parent)Button15" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" text="Button 15" hidden="true">
+              <Anchor point="3" relativePoint="6" relativeTo="$(parent)Button14"/>
+              <FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/>
+              <Dimensions x="230"/>
+              <OnClicked>AG.MenuAction(15)</OnClicked>
             </Button>
           </Controls>
         </Backdrop>
@@ -190,7 +208,7 @@
                 <Dimensions y="35" x="35"/>
                 <Textures normal="esoui/art/buttons/edit_save_up.dds" pressed="esoui/art/buttons/edit_save_down.dds" mouseOver="esoui/art/buttons/edit_save_over.dds"/>
                 <MouseButton button="2" enabled="true"/>
-                <OnClicked>d("asdf") AG.OnProfileActionsClicked(self)</OnClicked>
+                <OnClicked>AG.OnProfileActionsClicked(self)</OnClicked>
                 <OnMouseEnter>AG.Tooltip(self,true)</OnMouseEnter>
                 <OnMouseExit>AG.Tooltip(self,false)</OnMouseExit>
             </Button>
@@ -477,7 +495,7 @@
     </TopLevelControl>
     <!-- Repair Icon -->
     <Backdrop name="AG_RepairMainBg" alpha="0" centerColor="40FF0000" edgeColor="60FF0000" clampedToScreen="false" movable="true" mouseEnabled="true" topmost="true">
-      <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="ActionButton8" offsetX="-5" offsetY="-10"/>
+      <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="ActionButton7" offsetX="-5" offsetY="-10"/>
       <Dimensions x="70" y="70"/>
       <Edge edgeSize="1"/>
       <OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
@@ -512,7 +530,7 @@
     </Label>
     <!-- Weapon Icons -->
     <Backdrop name="AG_ChargeMainBg" alpha="0" centerColor="40FF0000" edgeColor="60FF0000" clampedToScreen="false" movable="true" mouseEnabled="true" topmost="true">
-      <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="ActionButton8" offsetX="45" offsetY="-10"/>
+      <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="ActionButton7" offsetX="45" offsetY="-10"/>
       <Dimensions x="125" y="70"/>
       <Edge edgeSize="1"/>
       <OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
@@ -690,22 +708,6 @@
       </OnMouseExit>
       <OnMouseDown>
         AG.OnDeleteBuildClicked(self.buildIndex)
-      </OnMouseDown>
-    </Button>
-
-    <Button name="AG_MoveUpButton_Template" clickSound="Click" virtual="true">
-      <Dimensions x="16" y="16"/>
-      <Textures normal="esoui/art/buttons/scrollbox_uparrow_up.dds" pressed="esoui/art/buttons/scrollbox_uparrow_down.dds" mouseOver="esoui/art/buttons/scrollbox_uparrow_over.dds" disabled="esoui/art/buttons/scrollbox_uparrow_up_disabled.dds"/>
-      <OnMouseDown>
-        AG.OnMoveUpClicked(self.mode, self.index)
-      </OnMouseDown>
-    </Button>
-
-    <Button name="AG_MoveDownButton_Template" clickSound="Click" virtual="true">
-      <Dimensions x="16" y="16"/>
-      <Textures normal="esoui/art/buttons/scrollbox_downarrow_up.dds" pressed="esoui/art/buttons/scrollbox_downarrow_down.dds" mouseOver="esoui/art/buttons/scrollbox_downarrow_over.dds" disabled="esoui/art/buttons/scrollbox_downarrow_up_disabled.dds"/>
-      <OnMouseDown>
-        AG.OnMoveDownClicked(self.mode, self.index)
       </OnMouseDown>
     </Button>
 

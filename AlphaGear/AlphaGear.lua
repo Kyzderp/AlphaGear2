@@ -34,7 +34,10 @@ AG.MODE_BUILD = "Build"
 
 AG.MENU_TYPE_GEAR = 1
 AG.MENU_TYPE_SKILLS = 2
-AG.MENU_TYPE_PROFILE = 3 -- probably don't need, because the menu items are separate
+AG.MENU_TYPE_GEAR_ADV = 3
+AG.MENU_TYPE_SKILLS_ADV = 4
+AG.MENU_TYPE_BUILD_ADV = 5
+AG.MENU_TYPE_PROFILE = 6
 
 AG.account = {}
 AG.account_defaults = {
@@ -673,6 +676,7 @@ function AG.CreateButtonBarPanel(nr, modestr, parent, width)
     p:SetDimensions(width, 44)
     p:SetClickSound('Click')
     p:EnableMouseButton(2, true)
+    p:EnableMouseButton(3, true)
     p:SetNormalTexture('AlphaGear/asset/grey.dds')
     p:SetMouseOverTexture('AlphaGear/asset/light.dds')
     p.data = { header = '|cFFAA33'..L.Head[modestr]..nr..'|r', info = L.Selector[modestr] }
@@ -735,15 +739,37 @@ local function DrawBuild(nr)
 
     s:SetDimensions(panelWidth, 76)
     s:SetClickSound('Click')
-    s:EnableMouseButton(2,true)
+    s:EnableMouseButton(2, true)
+    s:EnableMouseButton(3, true)
     s:SetNormalTexture('AlphaGear/asset/grey.dds')
     s:SetMouseOverTexture('AlphaGear/asset/light.dds')
     s.setnr = nr
     s:SetHandler('OnMouseEnter',function(self) AG.Tooltip(self,true) end)
     s:SetHandler('OnMouseExit',function(self) AG.Tooltip(self,false) end)
     s:SetHandler('OnMouseDown',
-        function(self,button)
-            if button == 2 then
+        function(self, button, ctrl, alt, shift)
+            if (button == 3 or (button == 2 and shift)) then
+                AG.DrawMenu(self, {
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+
+                    "Move up",
+                    "Move down",
+                    "Delete build",
+                    false,
+                    false,
+                    false,
+                    false,
+                })
+                MENU.nr = nr
+                MENU.type = AG.MENU_TYPE_BUILD_ADV
+            elseif button == 2 then
                 local k = AG_PanelSetPanelScrollChildEditPanel
                 local anchor = {k:GetAnchor()}
 
@@ -876,13 +902,38 @@ local function DrawSkillBarButtons(nr)
 
     p:SetHandler('OnMouseDown',
         function(self,button,ctrl,alt,shift)
-            if button == 2 then
+            if (button == 3 or (button == 2 and shift)) then
+                AG.DrawMenu(self, {
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+
+                    "Move up",
+                    "Move down",
+                    "Delete skillbar",
+                    false,
+                    false,
+                    false,
+                    false,
+                })
+                MENU.nr = nr
+                MENU.type = AG.MENU_TYPE_SKILLS_ADV
+            elseif button == 2 then
                 AG.DrawMenu(self, {
                     true,
                     (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_SKILLS),
                     true,
                     true,
-                    "Delete skillbar",
+                    false,
+                    false,
+                    false,
+                    false,
+
                     false,
                     false,
                     false,
@@ -896,7 +947,7 @@ local function DrawSkillBarButtons(nr)
             elseif shift then
                 if button == 1 then
                     AG.GetSkillFromBar(nr)
-                    AG.UpdateEditPanel(nr)
+                    AG.UpdateEditPanel()
                 end
             elseif button == 1 then
                 if SELECTBAR then
@@ -960,7 +1011,28 @@ local function DrawGearBarButtons(nr)
 
     p:SetHandler('OnMouseDown',
         function(self,button,ctrl,alt,shift)
-            if button == 2 then
+            if (button == 3 or (button == 2 and shift)) then
+                AG.DrawMenu(self, {
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+
+                    "Move up",
+                    "Move down",
+                    "Delete gear set",
+                    "Deposit this and above",
+                    "Deposit this and below",
+                    "Withdraw this and above",
+                    "Withdraw this and below",
+                })
+                MENU.nr = nr
+                MENU.type = AG.MENU_TYPE_GEAR_ADV
+            elseif button == 2 then
                 -- open context menu
                 local isBanking = IMGR:IsBanking()
 
@@ -969,11 +1041,15 @@ local function DrawGearBarButtons(nr)
                     (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_GEAR),
                     true,
                     true,
-                    "Delete gear set",
                     isBanking,
                     isBanking,
                     isBanking,
                     isBanking,
+
+                    false,
+                    false,
+                    false,
+                    false,
                     false,
                     false,
                     false,
@@ -2102,13 +2178,21 @@ end
 --- moves all gear sets of the current profile to or from BAG_BACKPACK
 -- @param deposit: if true then deposit the set to the current open bank, else withdraw
 function AG.MoveGearSetAll(deposit)
+    AG.MoveGearSets(deposit)
+end
+
+--- moves gear sets of the current profile to or from BAG_BACKPACK
+-- @param deposit: if true then deposit the set to the current open bank, else withdraw
+function AG.MoveGearSets(deposit, startIndex, endIndex)
+    local profile = AGD.GetProfile()
+    startIndex = startIndex or 1
+    endIndex = endIndex or #profile.gear
 
     table.insert(AG.Jobs, {AG.JOB_TYPE_PREPARE_TOON, 0, 0})
 
     table.insert(AG.Jobs, {AG.JOB_TYPE_START_BULK_MODE, 0, 0})
 
-    local profile = AGD.GetProfile()
-    for i = 1, #profile.gear do
+    for i = startIndex, endIndex do
         AG.MoveGearSet(deposit, i, false)
     end
 
@@ -2549,12 +2633,13 @@ function AG.UpdateEditPanel(nr)
     -- Draws two rows of skill buttons in selected set
     for x = 1,2 do
         for slot = 1,6 do
-            local linkedSkillbar = set.skill[x]
-            local profileSkillbars = AGD.GetProfile().skillbars
-            if IsNonEmpty(linkedSkillbar) and profileSkillbars[linkedSkillbar] and IsNonEmpty(profileSkillbars[linkedSkillbar][slot]) then
-                val = GetAbilityTexture(profileSkillbars[linkedSkillbar][slot])
-            else
-                val = nil
+            val = nil
+            if (set.skill) then
+                local linkedSkillbar = set.skill[x]
+                local profileSkillbars = AGD.GetProfile().skillbars
+                if IsNonEmpty(linkedSkillbar) and profileSkillbars[linkedSkillbar] and IsNonEmpty(profileSkillbars[linkedSkillbar][slot]) then
+                    val = GetAbilityTexture(profileSkillbars[linkedSkillbar][slot])
+                end
             end
             WM:GetControlByName('AG_Edit_Skill_'..x..'_'..slot):SetNormalTexture(val)
         end
@@ -3587,8 +3672,11 @@ function AG.ShowButton(c)
         end
     end
     if SELECT and not AG_PanelSetPanelScrollChildEditPanel:IsHidden() then
-        if (nr == AGD.GetProfile().builds[SELECT].gear or nr == AGD.GetProfile().builds[SELECT].skill[1] or nr == AGD.GetProfile().builds[SELECT].skill[2]) then
-            AG.UpdateEditPanel(SELECT)
+        local build = AGD.GetProfile().builds[SELECT]
+        if (build) then
+            if (nr == build.gear or (build.skill and (nr == build.skill[1] or build.skill[2]))) then
+                AG.UpdateEditPanel(SELECT)
+            end
         end
     end
 end
@@ -3822,7 +3910,11 @@ end
 
 -- Executes a menu action
 -- nr: number of action to execute
--- 1: copy, 2: paste, 3: insert equipped, 4: clear, 5: delete bar, 6: deposit, 7: withdraw, 8: deposit profile, 9: withdraw profile, 10: reorder, 11: import, 12: delete profile
+-- 1: copy, 2: paste, 3: insert equipped, 4: clear, 5: deposit, 6: withdraw, 7: deposit profile, 8: withdraw profile
+-- advanced skills:
+-- 9: move up, 10: move down, 11: delete set
+-- advanced gear:
+-- 9: move up, 10: move down, 11: delete set, 12: deposit this and above, 13: deposit this and below, 14: withdraw this and above, 15: withdraw this and below
 function AG.MenuAction(nr)
     trace('MenuAction')
 
@@ -3885,41 +3977,92 @@ function AG.MenuAction(nr)
             AG.UpdateUI(MENU.nr,MENU.nr)
         end
     elseif nr == 5 then
-        -- Delete set
-        if MENU.type == AG.MENU_TYPE_GEAR then
-            AG.OnDeleteGearClicked(MENU.nr)
-        elseif (MENU.type == AG.MENU_TYPE_SKILLS) then
-            AG.OnDeleteSkillbarClicked(MENU.nr)
-        end
-    elseif nr == 6 then
         -- deposit
         if MENU.type == AG.MENU_TYPE_GEAR then
             AG.MoveGearSet(true, MENU.nr, true)
         end
-    elseif nr == 7 then
+    elseif nr == 6 then
         -- withdraw
         if MENU.type == AG.MENU_TYPE_GEAR then
             AG.MoveGearSet(false, MENU.nr, true)
         end
-    elseif nr == 8 then
+    elseif nr == 7 then
         -- deposit profile
         if MENU.type == AG.MENU_TYPE_GEAR then
             AG.MoveGearSetAll(true)
         end
-    elseif nr == 9 then
+    elseif nr == 8 then
         -- withdraw profile
         if MENU.type == AG.MENU_TYPE_GEAR then
             AG.MoveGearSetAll(false)
         end
+    elseif (nr == 9) then
+        if (MENU.type == AG.MENU_TYPE_PROFILE) then
+            -- import profile
+            AG.ShowImportDialog()
+            return
+        end
+
+        -- move up
+        local profile = AGD.GetProfile()
+        if (MENU.type == AG.MENU_TYPE_BUILD_ADV) then
+            AGD.ReorderBuild(MENU.nr, -1)
+            AG.HideEditPanel()
+            AG.UpdateUI(MENU.nr - 1, MENU.nr)
+        elseif (MENU.type == AG.MENU_TYPE_GEAR_ADV) then
+            AGD.ReorderGear(MENU.nr, -1)
+            AG.UpdateGearButtons(MENU.nr - 1, MENU.nr)
+            AG.UpdateEditPanel()
+            AG.UpdateUI(MENU.nr - 1, MENU.nr)
+        elseif (MENU.type == AG.MENU_TYPE_SKILLS_ADV) then
+            AGD.ReorderSkillbar(MENU.nr, -1)
+            AG.UpdateSkillButtons(MENU.nr - 1, MENU.nr)
+            AG.UpdateEditPanel()
+        end
     elseif (nr == 10) then
-        -- toggle reordering mode
-        AG.ToggleReorderMode()
+        if (MENU.type == AG.MENU_TYPE_PROFILE) then
+            -- delete profile
+            AG.OnDeleteProfileClicked()
+            return
+        end
+
+        -- move down
+        local profile = AGD.GetProfile()
+        if (MENU.type == AG.MENU_TYPE_BUILD_ADV) then
+            AGD.ReorderBuild(MENU.nr, 1)
+            AG.HideEditPanel()
+            AG.UpdateUI(MENU.nr, MENU.nr + 1)
+        elseif (MENU.type == AG.MENU_TYPE_GEAR_ADV) then
+            AGD.ReorderGear(MENU.nr, 1)
+            AG.UpdateGearButtons(MENU.nr, MENU.nr + 1)
+            AG.UpdateEditPanel()
+            AG.UpdateUI(MENU.nr, MENU.nr + 1)
+        elseif (MENU.type == AG.MENU_TYPE_SKILLS_ADV) then
+            AGD.ReorderSkillbar(MENU.nr, 1)
+            AG.UpdateSkillButtons(MENU.nr, MENU.nr + 1)
+            AG.UpdateEditPanel()
+        end
     elseif (nr == 11) then
-        -- import profile
-        AG.ShowImportDialog()
+        -- Delete set
+        if MENU.type == AG.MENU_TYPE_GEAR_ADV then
+            AG.OnDeleteGearClicked(MENU.nr)
+        elseif (MENU.type == AG.MENU_TYPE_SKILLS_ADV) then
+            AG.OnDeleteSkillbarClicked(MENU.nr)
+        elseif (MENU.type == AG.MENU_TYPE_BUILD_ADV) then
+            AG.OnDeleteBuildClicked(MENU.nr)
+        end
     elseif (nr == 12) then
-        -- delete profile
-        AG.OnDeleteProfileClicked()
+        -- Deposit this and above
+        AG.MoveGearSets(true, 1, MENU.nr)
+    elseif (nr == 13) then
+        -- Deposit this and below
+        AG.MoveGearSets(true, MENU.nr)
+    elseif (nr == 14) then
+        -- Withdraw this and above
+        AG.MoveGearSets(false, 1, MENU.nr)
+    elseif (nr == 15) then
+        -- Withdraw this and below
+        AG.MoveGearSets(false, MENU.nr)
     end
 end
 
@@ -4098,6 +4241,7 @@ local function UpdateSkillButtons(from, to)
         end
     end
 end
+AG.UpdateSkillButtons = UpdateSkillButtons
 
 -- Update a gear set's textures
 local function UpdateGearButtons(from, to)
@@ -4111,6 +4255,8 @@ local function UpdateGearButtons(from, to)
         end
     end
 end
+AG.UpdateGearButtons = UpdateGearButtons
+
 
 -----------------------------
 -- start import
@@ -4443,161 +4589,16 @@ function AG.OnProfileActionsClicked(button)
         false,
         false,
         false,
+
+        "Import profile",
+        "Delete profile",
         false,
-        true,
-        true,
-        true,
+        false,
+        false,
+        false,
+        false,
     })
-    -- MENU.nr = 1
-    -- MENU.type = AG.MENU_TYPE_PROFILE
-end
-
----------------------------------------------------------------------
--- Ordering buttons
-local moveUpControlPool, moveDownControlPool, reordering
-local upKeys = {}
-local upControls = {}
-local downKeys = {}
-local downControls = {}
-
-local function CreateMoveUpControl(parent, mode, index, enabled)
-    local parentControl = WM:GetControlByName(parent)
-    local control, key = moveUpControlPool:AcquireObject()
-    control:SetParent(parentControl)
-    control:SetAnchor(TOPLEFT, parentControl, TOPLEFT, 0, 0)
-    control.mode = mode
-    control.index = index
-    control:SetEnabled(enabled)
-    upKeys[mode .. index] = key
-    upControls[key] = control
-end
-
-local function CreateMoveDownControl(parent, mode, index, enabled)
-    local parentControl = WM:GetControlByName(parent)
-    local control, key = moveDownControlPool:AcquireObject()
-    control:SetParent(parentControl)
-    control:SetAnchor(TOPLEFT, parentControl, TOPLEFT, 0, 18)
-    control.mode = mode
-    control.index = index
-    control:SetEnabled(enabled)
-    downKeys[mode .. index] = key
-    downControls[key] = control
-end
-
--- Swap the buttons' indices and enabled state when 2 lines are swapped
-local function SwapButtonIndices(keysTable, controlsTable, mode, index1, index2, enableFunc)
-    local key1 = keysTable[mode .. index1]
-    local control1 = controlsTable[key1]
-
-    local key2 = keysTable[mode .. index2]
-    local control2 = controlsTable[key2]
-
-    keysTable[mode .. index1] = key2
-    keysTable[mode .. index2] = key1
-    control1.index = index2
-    control2.index = index1
-    control1:SetEnabled(enableFunc(index2))
-    control2:SetEnabled(enableFunc(index1))
-end
-
-local function SwapButtons(mode, index1, index2, maxIndex)
-    SwapButtonIndices(upKeys, upControls, mode, index1, index2, function(index) return index > 1 end)
-    SwapButtonIndices(downKeys, downControls, mode, index1, index2, function(index) return index < maxIndex end)
-end
-
-function AG.ToggleReorderMode()
-    if (reordering) then
-        reordering = false
-        for key, _ in pairs(upControls) do
-            moveUpControlPool:ReleaseObject(key)
-            upControls[key] = nil
-        end
-        for key, _ in pairs(downControls) do
-            moveDownControlPool:ReleaseObject(key)
-            downControls[key] = nil
-        end
-        ZO_ClearTable(upKeys)
-        ZO_ClearTable(downKeys)
-    else
-        if (not moveUpControlPool) then
-            moveUpControlPool = ZO_ControlPool:New("AG_MoveUpButton_Template", AG_Panel, "UpButton")
-            moveDownControlPool = ZO_ControlPool:New("AG_MoveDownButton_Template", AG_Panel, "DownButton")
-        end
-
-        reordering = true
-        local profile = AGD.GetProfile()
-
-        for i = 1, #profile.builds do
-            CreateMoveUpControl("AG_SetSelector_" .. i, AG.MODE_BUILD, i, i > 1)
-            CreateMoveDownControl("AG_SetSelector_" .. i, AG.MODE_BUILD, i, i < (#profile.builds))
-        end
-
-        for i = 1, #profile.gear do
-            CreateMoveUpControl("AG_Selector_Gear_" .. i, AG.MODE_GEAR, i, i > 1)
-            CreateMoveDownControl("AG_Selector_Gear_" .. i, AG.MODE_GEAR, i, i < (#profile.gear))
-        end
-
-        for i = 1, #profile.skillbars do
-            CreateMoveUpControl("AG_Selector_Skill_" .. i, AG.MODE_SKILL, i, i > 1)
-            CreateMoveDownControl("AG_Selector_Skill_" .. i, AG.MODE_SKILL, i, i < (#profile.skillbars))
-        end
-    end
-end
-
-function AG.TurnOffReorderMode()
-    if (reordering) then
-        AG.ToggleReorderMode()
-    end
-end
-
-function AG.OnMoveUpClicked(mode, index)
-    local profile = AGD.GetProfile()
-    local maxIndex
-    if (mode == AG.MODE_BUILD) then
-        AGD.ReorderBuild(index, -1)
-        AG.HideEditPanel()
-        AG.UpdateUI(index - 1, index)
-        maxIndex = #profile.builds
-    elseif (mode == AG.MODE_GEAR) then
-        AGD.ReorderGear(index, -1)
-        UpdateGearButtons(index - 1, index)
-        AG.UpdateEditPanel()
-        maxIndex = #profile.gear
-    elseif (mode == AG.MODE_SKILL) then
-        AGD.ReorderSkillbar(index, -1)
-        UpdateSkillButtons(index - 1, index)
-        AG.UpdateEditPanel()
-        maxIndex = #profile.skillbars
-    else
-        d("|cFF0000No mode specified???")
-        return
-    end
-    SwapButtons(mode, index - 1, index, maxIndex)
-end
-
-function AG.OnMoveDownClicked(mode, index)
-    local profile = AGD.GetProfile()
-    local maxIndex
-    if (mode == AG.MODE_BUILD) then
-        AGD.ReorderBuild(index, 1)
-        AG.HideEditPanel()
-        AG.UpdateUI(index, index + 1)
-        maxIndex = #profile.builds
-    elseif (mode == AG.MODE_GEAR) then
-        AGD.ReorderGear(index, 1)
-        UpdateGearButtons(index, index + 1)
-        AG.UpdateEditPanel()
-        maxIndex = #profile.gear
-    elseif (mode == AG.MODE_SKILL) then
-        AGD.ReorderSkillbar(index, 1)
-        UpdateSkillButtons(index, index + 1)
-        AG.UpdateEditPanel()
-        maxIndex = #profile.skillbars
-    else
-        d("|cFF0000No mode specified???")
-        return
-    end
-    SwapButtons(mode, index, index + 1, maxIndex)
+    MENU.type = AG.MENU_TYPE_PROFILE
 end
 
 
