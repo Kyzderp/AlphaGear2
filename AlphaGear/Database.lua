@@ -489,7 +489,7 @@ AGD.DeleteSkillbar = DeleteSkillbar
 ---------------------------------------------------------------------
 local function ReorderBuild(index, offset)
     local profileTable = GetProfileTable()
-    local build = table.remove(#profileTable.builds, index)
+    local build = table.remove(profileTable.builds, index)
     table.insert(profileTable.builds, index + offset, build)
 end
 AGD.ReorderBuild = ReorderBuild

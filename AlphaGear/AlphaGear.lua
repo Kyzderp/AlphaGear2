@@ -108,6 +108,7 @@ AG.markerInventories = {
     ZO_PlayerBankBackpack,
     ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack,
     ZO_SmithingTopLevelImprovementPanelInventoryBackpack,
+    ZO_UniversalDeconstructionTopLevel_KeyboardPanelInventoryBackpack,
 }
 --< BAERTRAM - FCOIS
 
@@ -4365,8 +4366,6 @@ function AG.LoadProfile(profileId)
         msg("|cFF0000Couldn't load profile that doesn't exist: " .. profileId)
         return
     end
-
-    AG.TurnOffReorderMode()
 
     if (not profileId) then
         -- nil profileId means we're refreshing the page after creating/deleting sets
