@@ -415,6 +415,8 @@ end
 
 -- AG.DrawMenu reveals or hides the menu when invoked
 -- line is an array of (mostly) booleans, which enables or disables a menu item
+-- if the value is a string, enable the entry and set that as the text
+-- if the value is a table (should be of format {"Move up"}), enable the entry but disable the button, and set the text
 function AG.DrawMenu(c, line)
     AG_PanelMenu:ToggleHidden()
     AG_PanelMenu:SetAnchor(3, c, 6, 0, 0)
@@ -427,7 +429,11 @@ function AG.DrawMenu(c, line)
             h = h + 30
             c1:SetHeight(30)
             c1:SetHidden(false)
-            if (type(x) == "string") then
+            c1:SetEnabled(true)
+            if (type(x) == "table") then
+                c1:SetText(x[1])
+                c1:SetEnabled(false)
+            elseif (type(x) == "string") then
                 c1:SetText(x)
             end
         else
@@ -760,8 +766,8 @@ local function DrawBuild(nr)
                     false,
                     false,
 
-                    "Move up",
-                    "Move down",
+                    (nr > 1) and "Move up" or {"Move up"},
+                    (nr < #AGD.GetProfile().builds) and "Move down" or {"Move down"},
                     "Delete build",
                     false,
                     false,
@@ -914,8 +920,8 @@ local function DrawSkillBarButtons(nr)
                     false,
                     false,
 
-                    "Move up",
-                    "Move down",
+                    (nr > 1) and "Move up" or {"Move up"},
+                    (nr < #AGD.GetProfile().skillbars) and "Move down" or {"Move down"},
                     "Delete skillbar",
                     false,
                     false,
@@ -1023,8 +1029,8 @@ local function DrawGearBarButtons(nr)
                     false,
                     false,
 
-                    "Move up",
-                    "Move down",
+                    (nr > 1) and "Move up" or {"Move up"},
+                    (nr < #AGD.GetProfile().gear) and "Move down" or {"Move down"},
                     "Delete gear set",
                     "Deposit this and above",
                     "Deposit this and below",
