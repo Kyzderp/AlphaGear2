@@ -63,7 +63,7 @@ local function PopulateNewProfile(profileId, profile)
     AGD.CreateSkillbar(profileId, profile)
 end
 
-local function InitEmptyBuild(index)
+local function InitEmptyBuild()
     return {
         text = {},
         icon = {},
@@ -71,6 +71,7 @@ local function InitEmptyBuild(index)
         outfit = -1,
     }
 end
+AGD.InitEmptyBuild = InitEmptyBuild
 
 local function InitEmptyProfile(name, sortKey, lastUsedBuild)
     return {
@@ -417,7 +418,7 @@ AGD.DeleteProfile = DeleteProfile
 -- Initializes values in new build. Builds are always contiguous
 local function CreateBuild(profileId, profile)
     local profileTable = profile or GetProfileTable(profileId)
-    table.insert(profileTable.builds, InitEmptyBuild(#profileTable.builds + 1))
+    table.insert(profileTable.builds, InitEmptyBuild())
 end
 AGD.CreateBuild = CreateBuild
 

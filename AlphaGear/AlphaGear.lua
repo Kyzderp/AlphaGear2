@@ -530,14 +530,14 @@ function AG.InsertItemInGearSet(setId, slot, newId, newLink, newEquipType)
 
         -- clear the second slot in case of a switch from two-handed to one-handed
         if slotToClear then
-            gearSlots[slotToClear] = { id = 0, link = 0 }
+            gearSlots[slotToClear] = nil
             AG.ShowButton(WM:GetControlByName('AG_Button_Gear_'..nr..'_'..slotToClear))
         end
 
         -- revome the item from any slot in the same gear set, in case it was dragged form one slot to another
         for _,xslot in pairs(DUPSLOTS) do
             if (IsNonEmpty(gearSlots[xslot]) and gearSlots[xslot].id == newId) then
-                gearSlots[xslot] = { id = 0, link = 0 }
+                gearSlots[xslot] = nil
                 AG.ShowButton(WM:GetControlByName('AG_Button_Gear_'..nr..'_'..xslot))
             end
         end
@@ -633,7 +633,7 @@ function AG.DrawButton(p, name, btn, nr, x, xpos, ypos, show)
                 function(self,button,ctrl,alt,shift)
                     if button == 2 then
                         -- clear skill
-                        AGD.GetProfile().skillbars[nr][x] = 0
+                        AGD.GetProfile().skillbars[nr][x] = nil
                         AG.ShowButton(self)
                     elseif shift then
                         if button == 1 then
@@ -3045,7 +3045,7 @@ function AG.SetGearConnection(c, button)
 
             if removedGearId ~= 0 then
                 AG.handleRemoveGearSetFromBuild(SELECT)
-                AGD.GetProfile().builds[SELECT].gear = 0
+                AGD.GetProfile().builds[SELECT].gear = nil
             end
         end
     end
@@ -3080,7 +3080,7 @@ function AG.SetSkillConnection(c, button, barId)
     elseif button == 2 then
         if SELECTBAR then
             -- clear skill set
-            AGD.GetProfile().builds[SELECT].skill[SELECTBAR] = 0
+            AGD.GetProfile().builds[SELECT].skill[SELECTBAR] = nil
         end
     end
 
@@ -3371,6 +3371,12 @@ function AG.setupMarkSetItems()
     local markItems = AG.isMarkSetItemsInBag()
 end
 
+local function UpdateAllWornConditions()
+    for _, slot in pairs(SLOTS) do
+        AG.UpdateCondition(_, BAG_WORN, slot[1])
+    end
+end
+
 function AG.setupItemCondition()
     local enabled = AG.isShowItemCondition()
 
@@ -3378,15 +3384,18 @@ function AG.setupItemCondition()
         EM:RegisterForEvent('AG_Event_Update_Condition', EVENT_INVENTORY_SINGLE_SLOT_UPDATE, AG.UpdateCondition)
         -- only worn items need to be repaired
         EM:AddFilterForEvent('AG_Event_Update_Condition', EVENT_INVENTORY_SINGLE_SLOT_UPDATE, REGISTER_FILTER_BAG_ID, BAG_WORN)
+
+        EM:RegisterForEvent('AG_Event_Armory_Load', EVENT_ARMORY_BUILD_RESTORE_RESPONSE, UpdateAllWornConditions)
     else
         EM:UnregisterForEvent('AG_Event_Update_Condition', EVENT_INVENTORY_SINGLE_SLOT_UPDATE)
+        EM:UnregisterForEvent('AG_Event_Armory_Load', EVENT_ARMORY_BUILD_RESTORE_RESPONSE)
     end
 
-    for _,c in pairs(SLOTS) do AG.UpdateCondition(_, BAG_WORN, c[1]) end
+    UpdateAllWornConditions()
 end
 
 function AG.setupItemQuality()
-    for _,c in pairs(SLOTS) do AG.UpdateCondition(_, BAG_WORN, c[1]) end
+    UpdateAllWornConditions()
 end
 
 function AG.setupAutoClose()
@@ -3436,7 +3445,7 @@ function AG.setupAutoRepairAtStores()
 end
 
 function AG.setupShowItemLevel()
-    for _,c in pairs(SLOTS) do AG.UpdateCondition(_, BAG_WORN, c[1]) end
+    UpdateAllWornConditions()
 end
 
 
@@ -3639,7 +3648,7 @@ function AG.ShowIconMenu(cp, button, bar)
         end
     elseif button == MOUSE_BUTTON_INDEX_RIGHT then
         -- clear icon
-        AGD.GetProfile().builds[SELECT].icon[SELECTBAR] = 0
+        AGD.GetProfile().builds[SELECT].icon[SELECTBAR] = nil
         AG.UpdateEditPanel(SELECT)
     end
 end
@@ -3964,17 +3973,17 @@ function AG.MenuAction(nr)
         if MENU.type == AG.MENU_TYPE_GEAR then
             AG.handlePreChangeGearSetItems(MENU.nr)
             for z = 1, #SLOTS do
-                AGD.GetProfile().gear[MENU.nr][z] = { id = 0, link = 0 }
+                AGD.GetProfile().gear[MENU.nr][z] = nil
                 AG.ShowButton(WM:GetControlByName('AG_Button_Gear_'..MENU.nr..'_'..z))
             end
             AG.handlePostChangeGearSetItems(MENU.nr)
         elseif MENU.type == AG.MENU_TYPE_SKILLS then
             for z = 1,6 do
-                AGD.GetProfile().skillbars[MENU.nr][z] = 0
+                AGD.GetProfile().skillbars[MENU.nr][z] = nil
                 AG.ShowButton(WM:GetControlByName('AG_Button_Skill_'..MENU.nr..'_'..z))
             end
         else
-            AGD.GetProfile().builds[MENU.nr] = { text = {0,0,0}, gear = 0, skill = {0,0}, icon = {0,0}, lock = 0 }
+            AGD.GetProfile().builds[MENU.nr] = AGD.InitEmptyBuild()
             AG.UpdateUI(MENU.nr,MENU.nr)
         end
     elseif nr == 5 then
@@ -3998,8 +4007,8 @@ function AG.MenuAction(nr)
             AG.MoveGearSetAll(false)
         end
     elseif (nr == 9) then
+        -- import profile
         if (MENU.type == AG.MENU_TYPE_PROFILE) then
-            -- import profile
             AG.ShowImportDialog()
             return
         end

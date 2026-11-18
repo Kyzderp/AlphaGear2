@@ -39,7 +39,7 @@
                             <Dimensions x="100"/>
                         </Label>
 
-                        <Label name="$(parent)Warning" font="ZoFontGame" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" horizontalAlignment="LEFT" text="Warning: this will overwrite your current profile! Extensions / integrations and advanced settings will not be imported.">
+                        <Label name="$(parent)Warning" font="ZoFontGame" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_SELECTED" horizontalAlignment="LEFT" text="Warning: this will overwrite your current profile! If you import extensions / integrations / advanced settings from another account or character, they may not match; please double check.">
                             <Anchor point="TOPLEFT" relativeTo="$(parent)ProfileLabel" relativePoint="BOTTOMLEFT" offsetY="5"/>
                             <Anchor point="TOPRIGHT" relativeTo="$(parent)ProfileDropdown" relativePoint="BOTTOMRIGHT" offsetY="5"/>
                         </Label>
