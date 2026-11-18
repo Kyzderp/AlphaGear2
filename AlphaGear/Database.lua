@@ -228,6 +228,7 @@ AGD.DeleteAllNonContiguous = DeleteAllNonContiguous
 -- /script AlphaGearDatabase.DeleteAllNonContiguous()
 
 local function MigrateData()
+    local isNew = false
     if (not AGX2_Character) then
         AGX2_Character = {}
     end
@@ -236,6 +237,7 @@ local function MigrateData()
     end
     if (not AGX2_Character.Default[GetUnitDisplayName("player")]) then
         AGX2_Character.Default[GetUnitDisplayName("player")] = {}
+        isNew = true -- New account; don't show migration cleanup dialog
     end
 
     local accTable = AGX2_Character.Default[GetUnitDisplayName("player")]
@@ -282,11 +284,12 @@ local function MigrateData()
             -- Nothing to migrate, just create empty
             accTable[charId] = InitEmptyCharacter(name)
             local newCharTable = accTable[charId]
-            newCharTable.profiles[1] = InitEmptyProfile(1)
+            newCharTable.profiles[1] = InitEmptyProfile("Profile 1")
             newCharTable.currentProfileId = 1
             PopulateNewProfile(1, newCharTable.profiles[1])
         end
     end
+    return isNew
 end
 AGD.MigrateData = MigrateData
 

@@ -4670,11 +4670,10 @@ function AG:Initialize()
         AG.account.Integrations = {table.unpack(AG.account_defaults.Integrations)}
     end
 
-    -- New data structure since 8.0.0
-    AGD.MigrateData()
-    -- TODO: dialog + delete empty
+    -- New data structure since 8.0.0. This also serves to initialize the data
+    local isNew = AGD.MigrateData()
 
-    if (not AG.account.askedDelete) then
+    if (not isNew and not AG.account.askedDelete) then
         AG.account.askedDelete = true
         EM:RegisterForEvent(AG.name .. "PlayerActivatedAskDelete", EVENT_PLAYER_ACTIVATED, AskDeleteNonContiguous, true)
     end
