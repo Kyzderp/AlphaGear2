@@ -406,6 +406,12 @@ function AG:CreateSettingsPage()
 			func = AG.onClickResetPositions,
 			width = "half",
 		},
+		{
+			type = "button",
+			name = "Clean Profiles",
+			func = AG.AskDeleteNonContiguous,
+			width = "half",
+		},
 
 	}
 

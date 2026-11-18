@@ -4362,6 +4362,31 @@ end
 -- end import
 ------------------------
 
+local function DeleteCharacter(argString)
+    local availableToDelete = {}
+    local isDeletable = false
+    for charId, charData in pairs(AGD.GetAccountTable()) do
+        if (not charData.profiles) then
+            table.insert(availableToDelete, charId)
+            if (charId == argString) then isDeletable = true end
+        else
+            local _, profile = next(charData.profiles)
+            if (not profile or not profile.gear) then
+                table.insert(availableToDelete, charId)
+                if (charId == argString) then isDeletable = true end
+            end
+        end
+    end
+
+    if (not isDeletable) then
+        msg(string.format("Not a valid character for deletion: \"%s\"\nCharacters that can be deleted: %s", argString, table.concat(availableToDelete, ", ")))
+        return
+    end
+
+    AGD.GetAccountTable()[argString] = nil
+    msg(string.format("Data for %s has been deleted.", argString))
+end
+
 --- loads profile with Id profileId and updates the UI
 function AG.LoadProfile(profileId)
 
@@ -4615,7 +4640,7 @@ end
 ---------------------------------------------------------------------
 local function AskDeleteNonContiguous()
     AGConfirmDlg.Show(
-        "AlphaGear 2 v8.0.0 and later revamps the way your builds are stored to be more efficient. You can now have a dynamic number of profiles, builds, gear sets, and skillbars; this means the saved variables no longer need to store extra empty information. Completely empty profiles have already been removed.\n\nWould you like to delete all trailing empty builds, gear sets, and skillbars now? Empty sets that come before non-empty sets will not be affected.\n\nYou can also do this later from the AlphaGear 2 addon settings.",
+        "AlphaGear 2 v8.0.0 and later revamps the way your data is stored to be more efficient. You can now have a dynamic number of profiles, builds, gear sets, and skillbars; this means the saved variables no longer need to store extra empty information. Completely empty profiles have already been removed.\n\nWould you like to delete all trailing empty builds, gear sets, and skillbars now? Empty sets that come before non-empty sets will not be affected.\n\nYou can also do this later from the AlphaGear 2 addon settings.",
         function()
             AGD.DeleteAllNonContiguous()
             DrawSets()
@@ -4660,6 +4685,7 @@ function AG:Initialize()
     SLASH_COMMANDS["/agdbg"] = AG.ToggleDebug
     SLASH_COMMANDS["/agclear"] = AG.ClearProfile
     SLASH_COMMANDS["/agimport"] = ImportProfileCommand
+    SLASH_COMMANDS["/agdeletechar"] = DeleteCharacter
 
     -- initialize account wide settings
     AG.account = ZO_SavedVars:NewAccountWide('AGX2_Account', AG.accountVariableVersion, nil, AG.account_defaults)

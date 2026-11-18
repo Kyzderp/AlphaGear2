@@ -96,20 +96,24 @@ end
 
 local function CleanZeroes(profile)
     local numCleaned = 0
-    for i, gear in ipairs(profile.gear) do
-        for j, slot in ipairs(gear) do
-            if (IsEmpty(slot.id) and IsEmpty(slot.link)) then
-                gear[j] = nil
-                numCleaned = numCleaned + 1
+    if (profile.gear) then -- could be nil for unmigrated data, i.e. due to it not being a valid character name or on other server
+        for i, gear in ipairs(profile.gear) do
+            for j, slot in ipairs(gear) do
+                if (IsEmpty(slot.id) and IsEmpty(slot.link)) then
+                    gear[j] = nil
+                    numCleaned = numCleaned + 1
+                end
             end
         end
     end
 
-    for i, skillbar in ipairs(profile.skillbars) do
-        for k, v in ipairs(skillbar) do
-            if (IsEmpty(v)) then
-                skillbar[k] = nil
-                numCleaned = numCleaned + 1
+    if (profile.skillbars) then
+        for i, skillbar in ipairs(profile.skillbars) do
+            for k, v in ipairs(skillbar) do
+                if (IsEmpty(v)) then
+                    skillbar[k] = nil
+                    numCleaned = numCleaned + 1
+                end
             end
         end
     end
@@ -119,8 +123,18 @@ end
 
 local function CleanAllZeroes(charId)
     local accTable = AGD.GetAccountTable()
+    local isUnmigrated
     for _, profile in pairs(accTable[charId].profiles) do
         CleanZeroes(profile)
+
+        if (not profile.gear) then
+            isUnmigrated = true
+        end
+    end
+
+    -- self-help
+    if (isUnmigrated) then
+        AG.msg(string.format("The data for %s has not been migrated. This could be due to a character name that no longer exists, or the character is on a different megaserver. If you don't have this character name on any server anymore, you can remove this character's data and save some memory usage by typing: /agdeletechar %s", charId, charId))
     end
 end
 AGD.CleanAllZeroes = CleanAllZeroes
@@ -221,8 +235,8 @@ local function DeleteAllNonContiguous()
                 AGD.alwaysDbg("currentProfileId now " .. charData.currentProfileId)
             end
         end
+        CleanAllZeroes(charId)
     end
-    -- TODO: update UI
 end
 AGD.DeleteAllNonContiguous = DeleteAllNonContiguous
 -- /script AlphaGearDatabase.DeleteAllNonContiguous()
@@ -287,6 +301,9 @@ local function MigrateData()
             newCharTable.profiles[1] = InitEmptyProfile("Profile 1")
             newCharTable.currentProfileId = 1
             PopulateNewProfile(1, newCharTable.profiles[1])
+        elseif (accTable[charId]) then
+            -- Already migrated and existing, just update the character name
+            accTable[charId].characterName = name
         end
     end
     return isNew
