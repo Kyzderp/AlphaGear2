@@ -370,7 +370,7 @@ function AG.handlePostChangeGearSetItems(setId)
 
         for buildId, build in ipairs(agModel.builds) do
             if build.gear == setId then
-                table.insert (affectedBuildIds, buildId)
+                table.insert(affectedBuildIds, buildId)
             end
         end
 
@@ -4278,12 +4278,52 @@ AG.UpdateGearButtons = UpdateGearButtons
 -- start import
 -- this file is too damn long
 -----------------------------
--- TODO: still need clearprofile? deleted for now
+-- Just clears the existing sets, as opposed to deleting sets
+local function ClearProfile(argString)
+    if (argString ~= "all" and argString ~= "gear" and argString ~= "skills" and argString ~= "sets") then
+        d("Really clear this entire profile? Type /agclear all||gear||skills||sets")
+        return
+    end
+
+    local profile = AGD.GetProfile()
+
+    -- Gear
+    if (argString == "all" or argString == "gear") then
+        for i = 1, #profile.gear do
+            AG.handlePreChangeGearSetItems(i)
+            for z = 1, #SLOTS do
+                profile.gear[i][z] = nil
+                AG.ShowButton(WM:GetControlByName("AG_Button_Gear_" .. i .. "_" .. z))
+            end
+            AG.handlePostChangeGearSetItems(i)
+        end
+    end
+
+    -- Skills
+    if (argString == "all" or argString == "skills") then
+        for i = 1, #profile.skillbars do
+            for z = 1,6 do
+                profile.skillbars[i][z] = nil
+                AG.ShowButton(WM:GetControlByName("AG_Button_Skill_" .. i .. "_" .. z))
+            end
+        end
+    end
+
+    -- Sets
+    if (argString == "all" or argString == "sets") then
+        for i = 1, #profile.builds do
+            profile.builds[i] = AGD.InitEmptyBuild()
+        end
+        AG.UpdateUI()
+        AG.UpdateSetButtons()
+        AG.HideEditPanel()
+    end
+end
 
 local function GetCharNames()
     local charNames = {}
     for index = 1, GetNumCharacters() do
-        local name, _, _, _, _, _, id, _ = GetCharacterInfo(index)
+        local name, _, _, _, _, _, id = GetCharacterInfo(index)
         charNames[zo_strformat("<<1>>", name)] = true
     end
     return charNames
@@ -4315,54 +4355,6 @@ local function ImportProfile(accountName, charId, profileId)
 end
 AG.ImportProfile = ImportProfile
 
--- TODO: fix this for char ids
-local function ImportProfileCommand(argString)
-    if (argString == "") then
-        msg("Usage: /agimport <character name> [profile id]\nNote: this does not import extensions / advanced settings")
-        local names = {}
-        for name, _ in pairs(GetCharNames()) do
-            table.insert(names, name)
-        end
-        msg("Available Characters: " .. table.concat(names, ", "))
-        return
-    end
-
-    local lastSpaceIndex = string.find(argString, " [^ ]*$")
-    if (not lastSpaceIndex) then lastSpaceIndex = 0 end
-    local lastWord = string.sub(argString, lastSpaceIndex + 1)
-    local lastNum = tonumber(lastWord)
-    local charName = ""
-    if (lastNum == nil or lastSpaceIndex == 0) then
-        charName = argString
-    else
-        charName = string.sub(argString, 1, lastSpaceIndex - 1)
-    end
-
-    if (not GetCharNames()[charName]) then
-        msg("No such character \"" .. charName .. "\"")
-        return
-    end
-    local otherData = otherCharVars[charName]
-    if (not otherData) then
-        msg("Loading saved vars for \"" .. charName .. "\"")
-        -- TODO
-        -- otherData = ZO_SavedVars:New('AGX2_Character', AG.characterVariableVersion, nil, init_data, nil, nil, charName)
-        otherCharVars[charName] = otherData
-    end
-
-    -- List the available profiles
-    if (not lastNum) then
-        msg("Available Profiles:")
-        for profileId, profileData in pairs(AGD.GetCharacter(charId).profiles) do -- TODO: fix this
-            local profileName = profileData.name
-            msg(zo_strformat("<<1>> - <<2>>", profileId, profileName))
-        end
-        msg("To import a profile, type again: /agimport " .. charName .. " number")
-        return
-    end
-
-    AG.ImportProfile(GetUnitDisplayName("player"), charName, lastNum)
-end
 
 ------------------------
 -- end import
@@ -4689,8 +4681,8 @@ function AG:Initialize()
 
     SLASH_COMMANDS["/alphagear"] = AG.ShowMain
     SLASH_COMMANDS["/agdbg"] = AG.ToggleDebug
-    SLASH_COMMANDS["/agclear"] = AG.ClearProfile
-    SLASH_COMMANDS["/agimport"] = ImportProfileCommand
+    SLASH_COMMANDS["/agclear"] = ClearProfile
+    SLASH_COMMANDS["/agimport"] = AG.ShowImportDialog
     SLASH_COMMANDS["/agdeletechar"] = DeleteCharacter
 
     -- initialize account wide settings
