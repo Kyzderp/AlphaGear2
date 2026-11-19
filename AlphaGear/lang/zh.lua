@@ -1,4 +1,5 @@
 local lmb,rmb = '|t16:16:AlphaGear/asset/lmb.dds|t','|t16:16:AlphaGear/asset/rmb.dds|t'
+local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t"
 
 
 
@@ -32,7 +33,7 @@ AGLang.msg = {
 	-- end new 6.2.1
 
     Icon = lmb..'选择图标',
-    Set = lmb..' 装备套装\n'..rmb..' 编辑套装',
+    Set = lmb..' 装备套装\n'..rmb..' 编辑套装' .. mmb .. " Advanced options",
     NotFound = '<<1>> |cFF0000没有找到...|r',
     NotEnoughSpace = '|cFFAA33AlphaGear|r |cFF0000没有足够的空间...|r',
     SoulgemUsed = '<<C:1>> |cFFAA33已充能.|r',
@@ -91,8 +92,8 @@ AGLang.msg = {
         Skill = lmb..' 装备技能\n'..rmb..' 移除技能'
     },
     Selector = {
-        Gear = lmb..' 装备所有装备\n'..rmb..' 更多选项',
-        Skill = lmb..' 装备所有技能\n'..rmb..' 更多选项'
+        Gear = lmb..' 装备所有装备\n'..rmb..' 更多选项' .. mmb .. " Advanced options",
+        Skill = lmb..' 装备所有技能\n'..rmb..' 更多选项' .. mmb .. " Advanced options",
     },
     OptionWidth = 300,
     Options = {

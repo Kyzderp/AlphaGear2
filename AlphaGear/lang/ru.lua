@@ -1,4 +1,5 @@
 local lmb,rmb = '|t16:16:AlphaGear/asset/lmb.dds|t','|t16:16:AlphaGear/asset/rmb.dds|t'
+local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t"
 
 
 
@@ -32,7 +33,7 @@ ShowMainBinding = 'Показать/скрыть окно AlphaGear',
 -- end new 6.2.1
 
 Icon = lmb..'Выберите значок',
-Set = lmb..' Экипировать набор\n'..rmb..' Редактировать набор',
+Set = lmb..' Экипировать набор\n'..rmb..' Редактировать набор' .. mmb .. " Advanced options",
 NotFound = '<<1>> |cFF0000не был найден...|r',
 NotEnoughSpace = '|cFFAA33AlphaGear|r |cFF0000Нет места в инвентаре...|r',
 SoulgemUsed = '<<C:1>> |cFFAA33был перезаряжен.|r',
@@ -91,8 +92,8 @@ Button = {
     Skill = lmb..' Установить умение\n'..rmb..' Удалить умение'
 },
 Selector = {
-    Gear = lmb..' Одеть все предметы\n'..rmb..' Больше действий',
-    Skill = lmb..' Установить все умения\n'..rmb..' Больше действий'
+    Gear = lmb..' Одеть все предметы\n'..rmb..' Больше действий' .. mmb .. " Advanced options",
+    Skill = lmb..' Установить все умения\n'..rmb..' Больше действий' .. mmb .. " Advanced options",
 },
 OptionWidth = 360,
 Options = {

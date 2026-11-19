@@ -1,4 +1,5 @@
 local lmb,rmb = '|t16:16:AlphaGear/asset/lmb.dds|t','|t16:16:AlphaGear/asset/rmb.dds|t'
+local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t"
 
 
 
@@ -32,7 +33,7 @@ AGLang.msg = {
 	-- end new 6.2.1
 
 	Icon = lmb..'Ikone manuell auswählen',
-	Set = lmb..' Build anlegen\n'..rmb..' Build bearbeiten',
+	Set = lmb..' Build anlegen\n'..rmb..' Build bearbeiten' .. mmb .. " Advanced options",
 	NotFound = '<<1>> |cFF0000konnte nicht gefunden werden...|r',
 	NotEnoughSpace = '|cFFAA33AlphaGear|r |cFF0000Nicht genügend Taschenplatz...|r',
 	SoulgemUsed = '<<C:1>> |cFFAA33wurde neu aufgeladen.|r',
@@ -91,8 +92,8 @@ AGLang.msg = {
 		Skill = '\n'..lmb..' Fertigkeit ausrüsten\n'..rmb..' Fertigkeit entfernen'
 	},
 	Selector = {
-		Gear = lmb..' Gesamte Ausrüstung anlegen\n'..rmb..' Weitere Optionen',
-		Skill = lmb..' Alle Fertigkeiten ausrüsten\n'..rmb..' Weitere Optionen'
+		Gear = lmb..' Gesamte Ausrüstung anlegen\n'..rmb..' Weitere Optionen'  .. mmb .. " Advanced options",
+		Skill = lmb..' Alle Fertigkeiten ausrüsten\n'..rmb..' Weitere Optionen'  .. mmb .. " Advanced options",
 	},
 	OptionWidth = 310,
 	Options = {

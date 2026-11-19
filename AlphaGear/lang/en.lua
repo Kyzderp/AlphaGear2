@@ -1,4 +1,8 @@
 local lmb,rmb = '|t16:16:AlphaGear/asset/lmb.dds|t','|t16:16:AlphaGear/asset/rmb.dds|t'
+local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t"
+-- local keyCode, mod1, mod2, mod3, mod4 = GetActionBindingInfo(layerIndex, categoryIndex, actionIndex, i)
+-- local keybindString = ZO_Keybindings_GetBindingStringFromKeys(keyCode, mod1, mod2, mod3, mod4, nil, KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP)
+
 
 AGLang = {}
 
@@ -32,7 +36,7 @@ AGLang.msg = {
 	-- end new 6.2.1
 
 	Icon = lmb..'Choose icon',
-	Set = lmb..' Equip build\n'..rmb..' Edit build',
+	Set = lmb..' Equip build\n'..rmb..' Edit build\n' .. mmb .. " Advanced options",
 	NotFound = '<<1>> |cFF0000was not found...|r',
 	NotEnoughSpace = '|cFFAA33AlphaGear|r |cFF0000Not enough bag-space...|r',
 	SoulgemUsed = '<<C:1>> |cFFAA33was recharged.|r',
@@ -91,8 +95,8 @@ AGLang.msg = {
 		Skill = lmb..' Equip skill\n'..rmb..' Remove skill'
 	},
 	Selector = {
-		Gear = lmb..' Equip entire gear\n'..rmb..' More options',
-		Skill = lmb..' Equip all skills\n'..rmb..' More options'
+		Gear = lmb..' Equip entire gear\n'..rmb..' Options' .. mmb .. " Advanced options",
+		Skill = lmb..' Equip all skills\n'..rmb..' Options' .. mmb .. " Advanced options",
 	},
 	OptionWidth = 300,
 	Options = {
