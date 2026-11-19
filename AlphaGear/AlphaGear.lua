@@ -1144,7 +1144,6 @@ local function DrawSets()
 end
 
 function AG.SetupMainPanel()
-
     -- Create Key Binding Labels
     ZO_CreateStringId('SI_BINDING_NAME_SHOW_AG_WINDOW', L.ShowMainBinding)
     ZO_CreateStringId('SI_BINDING_NAME_AG_UNDRESS', L.UneqipAllBinding)
@@ -1854,7 +1853,8 @@ function AG.SetupProfileCombo()
     local defaultEntry
 
     -- Add available Profiles
-    for profileId, profile in pairs(AGD.GetCharacter().profiles) do
+    for _, profileId in ipairs(GetSortedProfileIds()) do
+        local profile = AGD.GetCharacter().profiles[profileId]
         local entry = ZO_ComboBox:CreateItemEntry(profile.name, OnProfileSelected)
         entry.profileId = profileId
         dropdown:AddItem(entry, ZO_COMBOBOX_SUPRESS_UPDATE)
@@ -2755,8 +2755,6 @@ function AG:CommitEditProfileDialog(control)
 
     AG.UpdateSwapMessage()
     AG.SetupProfileCombo()
-
-
 end
 
 function AG:InitializeEditProfileDialog(control)
