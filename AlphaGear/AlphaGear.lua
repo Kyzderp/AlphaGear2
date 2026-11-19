@@ -768,7 +768,7 @@ local function DrawBuild(nr)
 
                     (nr > 1) and "Move up" or {"Move up"},
                     (nr < #AGD.GetProfile().builds) and "Move down" or {"Move down"},
-                    "Delete build",
+                    (#AGD.GetProfile().builds > 1) and "Delete build" or {"Delete build"},
                     false,
                     false,
                     false,
@@ -788,7 +788,6 @@ local function DrawBuild(nr)
                     anchor[3]:GetNamedChild('Edit'):SetHidden(true)
                     anchor[3]:GetNamedChild('BoxBg'):SetHidden(true)
                     anchor[3]:GetNamedChild('AdvBtn'):SetHidden(true)
-                    anchor[3]:GetNamedChild('DeleteBtn'):SetHidden(true)
                 end
 
                 -- open editpanel on this build
@@ -799,11 +798,6 @@ local function DrawBuild(nr)
                 WM:GetControlByName('AG_SetSelector_'..nr..'Edit'):ToggleHidden()
                 WM:GetControlByName('AG_SetSelector_'..nr..'BoxBg'):ToggleHidden()
                 WM:GetControlByName('AG_SetSelector_'..nr..'AdvBtn'):ToggleHidden()
-                if (#AGD.GetProfile().builds == 1) then
-                    WM:GetControlByName('AG_SetSelector_'..nr..'DeleteBtn'):SetHidden(true)
-                else
-                    WM:GetControlByName('AG_SetSelector_'..nr..'DeleteBtn'):ToggleHidden()
-                end
                 AG.UpdateEditPanel(self.setnr)
                 AG_PanelIcons:SetHidden(true)
                 SELECT = nr
@@ -866,23 +860,15 @@ local function DrawBuild(nr)
     p = WM:CreateControl('AG_SetSelector_'..nr..'BoxBg', s, CT_BACKDROP)
     p:SetDrawTier(1)
     p:SetAnchor(LEFT,l,LEFT,0,0)
-    p:SetDimensions(panelWidth-80-41, 30)
+    p:SetDimensions(panelWidth-80, 30)
     p:SetCenterColor(0,0,0,0.2)
     p:SetEdgeColor(0,0,0,0)
     p:SetEdgeTexture('',1,1,2)
     p:SetHidden(true)
 
-    -- Delete build button
-    local deleteBtn = WM:CreateControlFromVirtual(
-        "AG_SetSelector_" .. nr .. "DeleteBtn",
-        s,
-        "AG_DeleteBuildButton_Template")
-    deleteBtn.buildIndex = nr
-    deleteBtn:SetAnchor(LEFT, p, RIGHT, 4)
-
     -- crate advanced options button
     local btnAO = WM:CreateControl('AG_SetSelector_'..nr..'AdvBtn', s, CT_BUTTON)
-    btnAO:SetAnchor(LEFT, deleteBtn, RIGHT, 4, 0)
+    btnAO:SetAnchor(LEFT, p, RIGHT, 4, 0)
     btnAO:SetDimensions(35, 35)
     btnAO:SetNormalTexture('esoui/art/buttons/edit_up.dds')
     btnAO:SetMouseOverTexture('esoui/art/buttons/edit_over.dds')
@@ -922,7 +908,7 @@ local function DrawSkillBarButtons(nr)
 
                     (nr > 1) and "Move up" or {"Move up"},
                     (nr < #AGD.GetProfile().skillbars) and "Move down" or {"Move down"},
-                    "Delete skillbar",
+                    (#AGD.GetProfile().skillbars > 1) and "Delete skillbar" or {"Delete skillbar"},
                     false,
                     false,
                     false,
@@ -1031,7 +1017,7 @@ local function DrawGearBarButtons(nr)
 
                     (nr > 1) and "Move up" or {"Move up"},
                     (nr < #AGD.GetProfile().gear) and "Move down" or {"Move down"},
-                    "Delete gear set",
+                    (#AGD.GetProfile().gear > 1) and "Delete gear set" or {"Delete gear set"},
                     "Deposit this and above",
                     "Deposit this and below",
                     "Withdraw this and above",
@@ -1254,7 +1240,6 @@ function AG.HideEditPanel()
         anchor[3]:GetNamedChild('Edit'):SetHidden(true)
         anchor[3]:GetNamedChild('BoxBg'):SetHidden(true)
         anchor[3]:GetNamedChild('AdvBtn'):SetHidden(true)
-        anchor[3]:GetNamedChild("DeleteBtn"):SetHidden(true)
     end
 end
 
