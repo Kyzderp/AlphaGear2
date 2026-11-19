@@ -4,7 +4,7 @@ local AGD = AlphaGearDatabase
 
 AG.name = 'AlphaGear'
 AG.displayname = 'AlphaGear 2'
-AG.version = 'v8.0.0-reworking-data-snapshot'
+AG.version = 'v8.0.0-alpha1'
 AG.author = 'mesota, Kyzeragon'
 AG.init = false
 AG.pendingSet = -1
