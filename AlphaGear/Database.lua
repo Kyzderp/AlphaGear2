@@ -366,12 +366,13 @@ local function GetDuplicateNameCharIds(accName)
     local names = {}
     local dupes = {}
     for charId, charData in pairs(accTable) do
-        if (charData.charName) then
-            if (names[charData.charName]) then
+        if (charData.characterName) then
+            d(charData.characterName)
+            if (names[charData.characterName]) then
                 dupes[charId] = true
-                dupes[names[charData.charName]] = true
+                dupes[names[charData.characterName]] = true
             else
-                names[charData.charName] = true
+                names[charData.characterName] = charId
             end
         end
     end

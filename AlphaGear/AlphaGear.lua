@@ -4263,8 +4263,8 @@ AG.UpdateGearButtons = UpdateGearButtons
 -----------------------------
 -- Just clears the existing sets, as opposed to deleting sets
 local function ClearProfile(argString)
-    if (argString ~= "all" and argString ~= "gear" and argString ~= "skills" and argString ~= "sets") then
-        d("Really clear this entire profile? Type /agclear all||gear||skills||sets")
+    if (argString ~= "all" and argString ~= "gear" and argString ~= "skills" and argString ~= "builds" and argString ~= "sets") then
+        d("Really clear this entire profile? Type /agclear all||gear||skills||builds")
         return
     end
 
@@ -4293,7 +4293,7 @@ local function ClearProfile(argString)
     end
 
     -- Sets
-    if (argString == "all" or argString == "sets") then
+    if (argString == "all" or argString == "sets" or argString == "builds") then
         for i = 1, #profile.builds do
             profile.builds[i] = AGD.InitEmptyBuild()
         end

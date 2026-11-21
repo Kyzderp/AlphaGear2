@@ -49,7 +49,7 @@ local function SetUpCharacterDropdown(contentControl, accountName)
     end
 
     local currentCharacterEntry
-    local dupes = AGD.GetDuplicateNameCharIds()
+    local dupes = AGD.GetDuplicateNameCharIds(accountName)
     local hasValidChars = false
 
     combo:ClearItems()
