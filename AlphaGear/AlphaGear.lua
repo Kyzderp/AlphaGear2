@@ -1752,9 +1752,16 @@ function AG.LoadSkill(nr, slot, pair)
         trace('AbilityIndex has changed, replacing. Current AI: %d, New AI: %d', currentAbilityIndex, newAbilityIndex)
     end
 
-    local res = ACTION_BAR_ASSIGNMENT_MANAGER:GetHotbar(pair - 1):AssignSkillToSlotByAbilityId(slot + 2, skillID)
-    if not res then
-       msg("|cFF0000Failed to set new skill.|r You are probably in combat, kill a mob and try again!")
+    if (ACTION_BAR_ASSIGNMENT_MANAGER:GetHotbar(pair - 1):GetExpectedSlotEditResult(slot + 2) == HOT_BAR_RESULT_CANNOT_EDIT_SLOT) then
+        msg(zo_strformat("You cannot edit the <<1>> bar ability in slot <<2>><<3>>",
+            (pair == 1) and "front" or "back",
+            slot,
+            (slot == 6) and " (ultimate)" or ""))
+    else
+        local res = ACTION_BAR_ASSIGNMENT_MANAGER:GetHotbar(pair - 1):AssignSkillToSlotByAbilityId(slot + 2, skillID)
+        if not res then
+            msg("|cFF0000Failed to set new skill.|r You are probably in combat, kill a mob and try again!")
+        end
     end
 end
 
