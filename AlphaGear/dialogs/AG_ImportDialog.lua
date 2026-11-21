@@ -17,19 +17,26 @@ local function SetUpProfileDropdown(contentControl, accountName, charId)
     local combo = ZO_ComboBox_ObjectFromContainer(comboParent)
 
     if (not accountName or not charId) then
-        asdfdfsf()
         return
     end
+
+    local currentAccount = GetUnitDisplayName("player")
+    local currentCharId = GetCurrentCharacterId()
+    local currentProfileId = AGD.GetAccountTable()[currentCharId].currentProfileId
+
     combo:ClearItems()
 
     local function OnProfileSelected(_, _, entry)
         selectedProfile = entry.profile
     end
 
-    for profileNum, profileData in pairs(AGX2_Character.Default[accountName][charId].profiles) do
-        local entry = ZO_ComboBox:CreateItemEntry(profileData.name, OnProfileSelected)
-        entry.profile = profileNum
-        combo:AddItem(entry, ZO_COMBOBOX_SUPRESS_UPDATE)
+    for profileId, profileData in pairs(AGX2_Character.Default[accountName][charId].profiles) do
+        -- Don't allow importing the same profile
+        if (accountName ~= currentAccount or charId ~= currentCharId or profileId ~= currentProfileId) then
+            local entry = ZO_ComboBox:CreateItemEntry(profileData.name, OnProfileSelected)
+            entry.profile = profileId
+            combo:AddItem(entry, ZO_COMBOBOX_SUPRESS_UPDATE)
+        end
     end
     combo:UpdateItems()
 end
@@ -39,7 +46,6 @@ local function SetUpCharacterDropdown(contentControl, accountName)
     local combo = ZO_ComboBox_ObjectFromContainer(comboParent)
 
     if (not accountName) then
-        asdfdfsf()
         return
     end
 
