@@ -1,5 +1,6 @@
 local lmb,rmb = '|t16:16:AlphaGear/asset/lmb.dds|t','|t16:16:AlphaGear/asset/rmb.dds|t'
-local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t"
+local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t / " .. GetKeyName(KEY_SHIFT) .. "+" .. rmb
+local insertEquipped = GetKeyName(KEY_SHIFT) .. "+" .. lmb
 
 
 
@@ -33,7 +34,7 @@ AGLang.msg = {
     -- end new 6.2.1
 
     Icon = lmb..'アイコンを選択',
-    Set = lmb..' セットを装備\n'..rmb..' セットを編集' .. mmb .. " Advanced options",
+    Set = lmb..' セットを装備\n'..rmb..' セットを編集\n' .. mmb .. " 追加オプション",
     NotFound = '<<1>> |cFF0000は見つかりませんでした...|r',
     NotEnoughSpace = '|cFFAA33AlphaGear|r |cFF0000バッグ容量が不足しています...|r',
     SoulgemUsed = '<<C:1>> |cFFAA33はリチャージされました.|r',
@@ -92,8 +93,8 @@ AGLang.msg = {
         Skill = lmb..' スキルを装備\n'..rmb..' スキルを削除'
     },
     Selector = {
-        Gear = lmb..' 全体を装備\n'..rmb..' 追加オプション' .. mmb .. " Advanced options",
-        Skill = lmb..' 全てのスキルを装備\n'..rmb..' 追加オプション' .. mmb .. " Advanced options",
+        Gear = lmb..' 全体を装備\n'..rmb..' オプション\n' .. mmb .. " 追加オプション\n" .. insertEquipped .. " 現在の装備を挿入",
+        Skill = lmb..' 全てのスキルを装備\n'..rmb..' オプション\n' .. mmb .. " 追加オプション\n" .. insertEquipped .. " 現在の装備を挿入",
     },
     OptionWidth = 300,
     Options = {

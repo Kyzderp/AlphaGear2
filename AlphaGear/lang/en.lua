@@ -1,7 +1,6 @@
 local lmb,rmb = '|t16:16:AlphaGear/asset/lmb.dds|t','|t16:16:AlphaGear/asset/rmb.dds|t'
-local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t"
--- local keyCode, mod1, mod2, mod3, mod4 = GetActionBindingInfo(layerIndex, categoryIndex, actionIndex, i)
--- local keybindString = ZO_Keybindings_GetBindingStringFromKeys(keyCode, mod1, mod2, mod3, mod4, nil, KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP)
+local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t / " .. GetKeyName(KEY_SHIFT) .. "+" .. rmb
+local insertEquipped = GetKeyName(KEY_SHIFT) .. "+" .. lmb
 
 
 AGLang = {}
@@ -95,8 +94,8 @@ AGLang.msg = {
 		Skill = lmb..' Equip skill\n'..rmb..' Remove skill'
 	},
 	Selector = {
-		Gear = lmb..' Equip entire gear\n'..rmb..' Options' .. mmb .. " Advanced options",
-		Skill = lmb..' Equip all skills\n'..rmb..' Options' .. mmb .. " Advanced options",
+		Gear = lmb..' Equip entire gear\n'..rmb..' Options\n' .. mmb .. " Advanced options\n" .. insertEquipped .. " Insert currently equipped",
+		Skill = lmb..' Equip all skills\n'..rmb..' Options\n' .. mmb .. " Advanced options\n" .. insertEquipped .. " Insert currently equipped",
 	},
 	OptionWidth = 300,
 	Options = {

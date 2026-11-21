@@ -1,5 +1,6 @@
 local lmb,rmb = '|t16:16:AlphaGear/asset/lmb.dds|t','|t16:16:AlphaGear/asset/rmb.dds|t'
-local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t"
+local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t / " .. GetKeyName(KEY_SHIFT) .. "+" .. rmb
+local insertEquipped = GetKeyName(KEY_SHIFT) .. "+" .. lmb
 
 
 
@@ -33,7 +34,7 @@ AGLang.msg = {
 	-- end new 6.2.1
 
 	Icon = lmb..'Sélectionner l\'icône',
-	Set = lmb..' Équiper l\'ensemble\n'..rmb..' Modifier l\'ensemble' .. mmb .. " Advanced options",
+	Set = lmb..' Équiper l\'ensemble\n'..rmb..' Modifier l\'ensemble\n' .. mmb .. " plus d\'options",
 	NotFound = '<<1>> |cFF0000n\'a pas été trouvé...|r',
 	NotEnoughSpace = '|cFFAA33AlphaGear|r |cFF0000Pas assez d\'espace d\'inventaire...|r',
 	SoulgemUsed = '<<C:1>> |cFFAA33a été rechargé.|r',
@@ -92,8 +93,8 @@ AGLang.msg = {
 		Skill = lmb..' Placer la compétence\n'..rmb..' Supprimer la compétence'
 	},
 	Selector = {
-		Gear = lmb..' Équiper tout l\'équipement\n'..rmb..' plus d\'options' .. mmb .. " Advanced options",
-		Skill = lmb..' Placer toutes les compétences\n'..rmb..' plus d\'options' .. mmb .. " Advanced options",
+		Gear = lmb..' Équiper tout l\'équipement\n'..rmb..' options\n' .. mmb .. " plus d\'options\n" .. insertEquipped .. " Placer actuellement équipé",
+		Skill = lmb..' Placer toutes les compétences\n'..rmb..' options\n' .. mmb .. " plus d\'options\n" .. insertEquipped .. " Placer actuellement équipé",
 	},
 	OptionWidth = 400,
 	Options = {
