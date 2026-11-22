@@ -1,4 +1,4 @@
-local lmb,rmb = '|t16:16:AlphaGear/asset/lmb.dds|t','|t16:16:AlphaGear/asset/rmb.dds|t'
+local lmb,rmb = '|t16:16:AlphaGear/asset/lmb.dds|t –','|t16:16:AlphaGear/asset/rmb.dds|t –'
 local mmb = "|t16:16:AlphaGear/asset/mmb.dds|t / " .. GetKeyName(KEY_SHIFT) .. "+" .. rmb
 local insertEquipped = GetKeyName(KEY_SHIFT) .. "+" .. lmb
 

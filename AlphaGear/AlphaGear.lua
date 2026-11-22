@@ -2191,9 +2191,13 @@ function AG.MoveGearSets(deposit, startIndex, endIndex)
 
     table.insert(AG.Jobs, {AG.JOB_TYPE_START_BULK_MODE, 0, 0})
 
+    table.insert(AG.Jobs, {AG.JOB_TYPE_MESSAGE, ZOSF("Moving sets <<1>> ~ <<2>>...", startIndex, endIndex)})
+
     for i = startIndex, endIndex do
-        AG.MoveGearSet(deposit, i, false)
+        AG.MoveGearSet(deposit, i, false, true)
     end
+
+    table.insert(AG.Jobs, {AG.JOB_TYPE_MESSAGE, "Done"})
 
     table.insert(AG.Jobs, {AG.JOB_TYPE_STOP_BULK_MODE, 0, 0})
 
@@ -2204,7 +2208,7 @@ end
 --- moves a gear set to or from BAG_BACKPACK
 -- @param deposit: if true then deposit the set to the current open bank, else withdraw
 -- @param nr: number of set
-function AG.MoveGearSet(deposit, nr, update)
+function AG.MoveGearSet(deposit, nr, update, suppressMessage)
     if not nr then return end
     AG.ClearAvailableEquipmentCachePlain()
 
@@ -2214,7 +2218,9 @@ function AG.MoveGearSet(deposit, nr, update)
         table.insert(AG.Jobs, {AG.JOB_TYPE_START_BULK_MODE, 0, 0})
     end
 
-    table.insert(AG.Jobs, {AG.JOB_TYPE_MESSAGE, ZOSF(L.MovingSet, nr)})
+    if (not suppressMessage) then
+        table.insert(AG.Jobs, {AG.JOB_TYPE_MESSAGE, ZOSF(L.MovingSet, nr)})
+    end
 
 
     for slotIndex = 1, #SLOTS do
@@ -2228,7 +2234,9 @@ function AG.MoveGearSet(deposit, nr, update)
         end
     end
 
-    table.insert(AG.Jobs, {AG.JOB_TYPE_MESSAGE, "Done"})
+    if (not suppressMessage) then
+        table.insert(AG.Jobs, {AG.JOB_TYPE_MESSAGE, "Done"})
+    end
 
     if update then
         table.insert(AG.Jobs, {AG.JOB_TYPE_STOP_BULK_MODE, 0, 0})
