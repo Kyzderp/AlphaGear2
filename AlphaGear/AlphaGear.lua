@@ -4,7 +4,7 @@ local AGD = AlphaGearDatabase
 
 AG.name = 'AlphaGear'
 AG.displayname = 'AlphaGear 2'
-AG.version = 'v8.0.0-alpha1'
+AG.version = 'v8.0.0-alpha2'
 AG.author = 'mesota, Kyzeragon'
 AG.init = false
 AG.pendingSet = -1
@@ -569,17 +569,18 @@ end
 -- @param btn One of 'Gear', 'Skill'
 -- @param nr number of the set in "button"-mode, One of "1", "2" in "edit"-mode, "1" is mainhand, "2" is offhand
 -- @param x number of slot in set
-function AG.DrawButton(p, name, btn, nr, x, xpos, ypos, show)
+-- @param isEditPanel whether it's part of edit panel
+function AG.DrawButton(p, name, btn, nr, x, xpos, ypos, isEditPanel)
 
     -- creates buttons with names like
     -- AG_Edit_Gear_1
     local c = WM:CreateControl('AG_'..name..'_'..btn..'_'..nr..'_'..x, p, CT_BUTTON)
-    if show then c:SetAnchor(3,p,3,xpos,ypos) else c:SetAnchor(2,p,2,xpos,ypos) end
+    if isEditPanel then c:SetAnchor(3,p,3,xpos,ypos) else c:SetAnchor(2,p,2,xpos,ypos) end
     c:SetDrawTier(1)
     c:SetDimensions(40,40)
     c:SetMouseOverTexture('AlphaGear/asset/light.dds')
-    c:SetHandler('OnMouseEnter',function(self) AG.Tooltip(self,true,show) end)
-    c:SetHandler('OnMouseExit',function(self) AG.Tooltip(self,false,show) end)
+    c:SetHandler('OnMouseEnter',function(self) AG.Tooltip(self,true,isEditPanel) end)
+    c:SetHandler('OnMouseExit',function(self) AG.Tooltip(self,false,isEditPanel) end)
 
     local b = WM:CreateControl('AG_'..name..'_'..btn..'_'..nr..'_'..x..'Bg', c, CT_BACKDROP)
     b:SetAnchor(128,c,128,0,0)
@@ -596,7 +597,7 @@ function AG.DrawButton(p, name, btn, nr, x, xpos, ypos, show)
     b:SetEdgeTexture('',1,1,2)
     b:SetInsets(2,2,-2,-2)
 
-    if not show then
+    if not isEditPanel then
         c:SetClickSound('Click')
         c:EnableMouseButton(2,true)
         c:SetHandler('OnReceiveDrag',function(self) AG.OnDragReceive(self) end)
@@ -990,6 +991,87 @@ local function DrawCreateBarButton(mode, parent, width, numEntries)
     control:SetAnchor(TOPLEFT, parent, TOPLEFT, 0, 45 * numEntries)
 end
 
+local function OnGearBarClicked(self, button, ctrl, alt, shift)
+    local nr = self.nr
+    if (button == 3 or (button == 2 and shift)) then
+        AG.DrawMenu(self, {
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+
+            (nr > 1) and "Move up" or {"Move up"},
+            (nr < #AGD.GetProfile().gear) and "Move down" or {"Move down"},
+            (#AGD.GetProfile().gear > 1) and "Delete gear set" or {"Delete gear set"},
+            "Deposit this and above",
+            "Deposit this and below",
+            "Withdraw this and above",
+            "Withdraw this and below",
+        })
+        MENU.nr = nr
+        MENU.type = AG.MENU_TYPE_GEAR_ADV
+    elseif button == 2 then
+        -- open context menu
+        local isBanking = IMGR:IsBanking()
+
+        AG.DrawMenu(self, {
+            true,
+            (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_GEAR),
+            true,
+            true,
+            isBanking,
+            isBanking,
+            isBanking,
+            isBanking,
+
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+        })
+        MENU.nr = nr
+        MENU.type = AG.MENU_TYPE_GEAR
+    elseif shift then
+        if button == 1 then
+            -- inser currently equipped
+            MENU.type = AG.MENU_TYPE_GEAR
+            MENU.nr = nr
+            AG.MenuAction(3)
+            AG.UpdateEditPanel(SELECT)
+        end
+    elseif button == 1 then
+        if SELECTBAR then
+            -- use selected gear set in build
+
+            -- remove icon from old set
+            local removedGearId = AGD.GetProfile().builds[SELECT].gear
+            if removedGearId ~= 0 then
+                AG.handleRemoveGearSetFromBuild(SELECT)
+            end
+
+            -- change gear set
+            AGD.GetProfile().builds[SELECT].gear = nr
+
+            -- set icon for new set
+            AG.handleAssignGearSetToBuild(SELECT)
+
+            AG.SetConnect(AG.MODE_GEAR, 2)
+            SELECTBAR = false
+            AG.UpdateEditPanel(SELECT)
+        else
+            -- equipp gear
+            AG.LoadGear(nr)
+        end
+    end
+end
+
 local maxGearCreated = 0
 local function DrawGearBarButtons(nr)
     local p, exists = AG.CreateButtonBarPanel(nr, AG.MODE_GEAR, AG_PanelGearPanelScrollChild, 751)
@@ -1002,87 +1084,8 @@ local function DrawGearBarButtons(nr)
         maxGearCreated = nr
     end
 
-    p:SetHandler('OnMouseDown',
-        function(self,button,ctrl,alt,shift)
-            if (button == 3 or (button == 2 and shift)) then
-                AG.DrawMenu(self, {
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-
-                    (nr > 1) and "Move up" or {"Move up"},
-                    (nr < #AGD.GetProfile().gear) and "Move down" or {"Move down"},
-                    (#AGD.GetProfile().gear > 1) and "Delete gear set" or {"Delete gear set"},
-                    "Deposit this and above",
-                    "Deposit this and below",
-                    "Withdraw this and above",
-                    "Withdraw this and below",
-                })
-                MENU.nr = nr
-                MENU.type = AG.MENU_TYPE_GEAR_ADV
-            elseif button == 2 then
-                -- open context menu
-                local isBanking = IMGR:IsBanking()
-
-                AG.DrawMenu(self, {
-                    true,
-                    (MENU.copySourceSetId and MENU.type == AG.MENU_TYPE_GEAR),
-                    true,
-                    true,
-                    isBanking,
-                    isBanking,
-                    isBanking,
-                    isBanking,
-
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                })
-                MENU.nr = nr
-                MENU.type = AG.MENU_TYPE_GEAR
-            elseif shift then
-                if button == 1 then
-                    -- inser currently equipped
-                    MENU.type = AG.MENU_TYPE_GEAR
-                    MENU.nr = nr
-                    AG.MenuAction(3)
-                    AG.UpdateEditPanel(SELECT)
-                end
-            elseif button == 1 then
-                if SELECTBAR then
-                    -- use selected gear set in build
-
-                    -- remove icon from old set
-                    local removedGearId = AGD.GetProfile().builds[SELECT].gear
-                    if removedGearId ~= 0 then
-                        AG.handleRemoveGearSetFromBuild(SELECT)
-                    end
-
-                    -- change gear set
-                    AGD.GetProfile().builds[SELECT].gear = nr
-
-                    -- set icon for new set
-                    AG.handleAssignGearSetToBuild(SELECT)
-
-                    AG.SetConnect(AG.MODE_GEAR, 2)
-                    SELECTBAR = false
-                    AG.UpdateEditPanel(SELECT)
-                else
-                    -- equipp gear
-                    AG.LoadGear(nr)
-                end
-            end
-        end
-    )
+    p.nr = nr
+    p:SetHandler('OnMouseDown', OnGearBarClicked)
 
     CreateButtonBarLabel(nr, AG.MODE_GEAR, p)
 
@@ -2273,11 +2276,12 @@ function AG.IsBagsLocked()
 end
 
 
+local ITEM_MOVE_DELAY = 1
+local SKILL_CHANGE_DELAY = 1
+local PREPRARE_TOON_DELAY = 100
 function AG.HandleOnUpdate()
+    -- local startTime = GetGameTimeMilliseconds()
     -- Updated with shorter delays for faster loading
-    local ITEM_MOVE_DELAY = 1
-    local SKILL_CHANGE_DELAY = 1
-    local PREPRARE_TOON_DELAY = 100
 
     if AG.init and #AG.Jobs > 0 then
         local CurrentTime = GetGameTimeMilliseconds()
@@ -2343,6 +2347,7 @@ function AG.HandleOnUpdate()
             AG.NextEventTime = GetGameTimeMilliseconds() + delay
         end
     end
+    -- alwaysDbg(startTime - GetGameTimeMilliseconds())
 end
 
 

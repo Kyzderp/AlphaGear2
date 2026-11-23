@@ -470,6 +470,8 @@ local function DeleteGear(index)
             return nil
         elseif (oldValue and oldValue > index) then
             return oldValue - 1
+        else
+            return oldValue
         end
     end, nil)
 
@@ -497,6 +499,8 @@ local function DeleteSkillbar(index)
             return nil
         elseif (oldValue and oldValue > index) then
             return oldValue - 1
+        else
+            return oldValue
         end
     end)
 
@@ -528,6 +532,8 @@ local function ReorderGear(index, offset)
             return newIndex
         elseif (oldValue == newIndex) then
             return index
+        else
+            return oldValue
         end
     end, nil)
 end
@@ -546,6 +552,8 @@ local function ReorderSkillbar(index, offset)
             return newIndex
         elseif (oldValue == newIndex) then
             return index
+        else
+            return oldValue
         end
     end)
 end
