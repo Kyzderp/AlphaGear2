@@ -697,6 +697,52 @@
       </Controls>
     </Button>
 
+    <Button name="AG_IconButton_Template" clickSound="Click" virtual="true" tier="MEDIUM">
+      <Dimensions x="40" y="40"/>
+      <Textures mouseOver="AlphaGear/asset/light.dds"/>
+      <MouseButton button="2" enabled="true"/>
+      <OnClicked>AG.OnProfileActionsClicked(self)</OnClicked>
+      <OnMouseEnter>
+        AG.Tooltip(self, true, self.isEditPanel)
+      </OnMouseEnter>
+      <OnMouseExit>
+        AG.Tooltip(self, false, self.isEditPanel)
+      </OnMouseExit>
+      <OnMouseDown>
+        -- TODO
+      </OnMouseDown>
+      <OnReceiveDrag>
+        AG.OnDragReceive(self)
+      </OnReceiveDrag>
+      <Controls>
+        <Backdrop name="$(parent)Bg" centerColor="33000000" edgeColor="00000000">
+          <Edge edgeSize="1"/>
+          <Dimensions x="44" y="44"/>
+          <Anchor point="CENTER" relativeTo="$(parent)" relativePoint="CENTER"/>
+          <Insets left="2" top="2" right="-2" bottom="-2" />
+        </Backdrop>
+      </Controls>
+    </Button>
+
+    <Button name="AG_EditPanelIconButton_Template" virtual="true" tier="MEDIUM">
+      <Dimensions x="40" y="40"/>
+      <Textures mouseOver="AlphaGear/asset/light.dds"/>
+      <OnMouseEnter>
+        AG.Tooltip(self, true, true)
+      </OnMouseEnter>
+      <OnMouseExit>
+        AG.Tooltip(self, false, true)
+      </OnMouseExit>
+      <Controls>
+        <Backdrop name="$(parent)Bg" centerColor="33000000" edgeColor="00000000">
+          <Edge edgeSize="1"/>
+          <Dimensions x="44" y="44"/>
+          <Anchor point="CENTER" relativeTo="$(parent)" relativePoint="CENTER"/>
+          <Insets left="2" top="2" right="-2" bottom="-2" />
+        </Backdrop>
+      </Controls>
+    </Button>
+
     <TopLevelControl name="AG_SetTip" hidden="true">
       <Anchor point="6" relativePoint="3" relativeTo="AG_Charge1"/>
       <Dimensions x="350" y="188"/>

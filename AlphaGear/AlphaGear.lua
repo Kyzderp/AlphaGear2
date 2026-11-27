@@ -571,11 +571,13 @@ end
 -- @param x number of slot in set
 -- @param isEditPanel whether it's part of edit panel
 function AG.DrawButton(p, name, btn, nr, x, xpos, ypos, isEditPanel)
+    -- TODO
+    c.isEditPanel = isEditPanel
 
     -- creates buttons with names like
     -- AG_Edit_Gear_1
     local c = WM:CreateControl('AG_'..name..'_'..btn..'_'..nr..'_'..x, p, CT_BUTTON)
-    if isEditPanel then c:SetAnchor(3,p,3,xpos,ypos) else c:SetAnchor(2,p,2,xpos,ypos) end
+    if isEditPanel then c:SetAnchor(TOPLEFT, p, TOPLEFT, xpos, ypos) else c:SetAnchor(LEFT, p, LEFT, xpos, ypos) end
     c:SetDrawTier(1)
     c:SetDimensions(40,40)
     c:SetMouseOverTexture('AlphaGear/asset/light.dds')
@@ -583,7 +585,7 @@ function AG.DrawButton(p, name, btn, nr, x, xpos, ypos, isEditPanel)
     c:SetHandler('OnMouseExit',function(self) AG.Tooltip(self,false,isEditPanel) end)
 
     local b = WM:CreateControl('AG_'..name..'_'..btn..'_'..nr..'_'..x..'Bg', c, CT_BACKDROP)
-    b:SetAnchor(128,c,128,0,0)
+    b:SetAnchor(CENTER, c, CENTER, 0, 0)
     b:SetDimensions(44,44)
     b:SetCenterColor(0,0,0,0.2)
 
